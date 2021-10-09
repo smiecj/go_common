@@ -9,6 +9,7 @@ import (
 )
 
 // 自定义formatter, 参考: https://cloud.tencent.com/developer/article/1830707
+// 使用方式: log.Info("[method name] log msg: %s", msg)
 const (
 	timeFormat = "2006-01-02 15:04:05"
 )

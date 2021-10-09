@@ -1,5 +1,5 @@
 package errorcode
 
 const (
-	InputError = "service_401"
+	ServiceError = "service_401"
 )

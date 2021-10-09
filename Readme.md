@@ -4,7 +4,31 @@
 
 # 已实现功能
 ## http 客户端
-使用方式
+
 ```
+import client "github.com/smiecj/go_common/http"
 contentBytes := client.DoGetRequest(url, nil)
 ```
+
+## file writer
+
+```
+import "github.com/smiecj/go_common/util/file"
+file.Write("/tmp/test.log", "content", file.ModeCreate)
+```
+
+## logger
+
+```
+import log "github.com/smiecj/go_common/util/log"
+log.Info("msg: %s", msg)
+```
+
+## 错误码
+```
+import log "github.com/smiecj/go_common/errorcode"
+return errorcode.ServiceError
+```
+
+## DB 操作
+### 待补充
