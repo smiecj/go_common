@@ -39,17 +39,17 @@ func init() {
 }
 
 func Debug(format string, args ...interface{}) {
-	log.Debugf(format, args)
+	log.Debugf(format, args...)
 }
 
 func Info(format string, args ...interface{}) {
-	log.Infof(format, args)
+	log.Infof(format, args...)
 }
 
 func Warn(format string, args ...interface{}) {
-	log.Warnf(format, args)
+	log.Warnf(format, args...)
 }
 
 func Error(format string, args ...interface{}) {
-	log.Errorf(format, args)
+	log.Errorf(format, args...)
 }
