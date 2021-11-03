@@ -11,7 +11,7 @@ type whereCondition struct {
 	Value  string `json:"value"`
 }
 
-type Condition struct {
+type SearchCondition struct {
 	Order struct {
 		Field string `json:"field"`
 		Sc    string `json:"sc"`
@@ -20,5 +20,9 @@ type Condition struct {
 		No    int `json:"no"`
 		Limit int `json:"limit"`
 	} `json:"page"`
+	Where []whereCondition `json:"where"`
+}
+
+type UpdateCondition struct {
 	Where []whereCondition `json:"where"`
 }
