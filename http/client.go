@@ -1,4 +1,4 @@
-package client
+package http
 
 import (
 	"encoding/json"
@@ -19,8 +19,8 @@ var (
 )
 
 const (
-	MethodGet  HTTPRequestMethod = "GET"
-	MethodPost HTTPRequestMethod = "POST"
+	methodGet  HTTPRequestMethod = "GET"
+	methodPost HTTPRequestMethod = "POST"
 
 	headerContentType     = "Content-Type"
 	contentTypeJson       = "application/json"
@@ -56,10 +56,10 @@ func buildRequest() *Request {
 // 需要借助 method + header 共同构建
 func (req *Request) makeRequestBody() {
 	switch req.method {
-	case string(MethodGet):
+	case string(methodGet):
 		// GET 方法统一不需要设置body
 		break
-	case string(MethodPost):
+	case string(methodPost):
 		// POST 方法，要根据header 中的参数格式 Content-Type 来设置格式
 		// 如果body 已经被设置，则直接跳过
 		if req.body != "" {
@@ -87,14 +87,14 @@ type Response struct {
 type ConfigRequestFunc func(*Request)
 
 // 配置url
-func ConfigRequestUrl(url string) func(*Request) {
+func Url(url string) func(*Request) {
 	return func(request *Request) {
 		request.url = url
 	}
 }
 
 // 配置 自定义 header，每次只设置一个key-value对
-func ConfigRequestAddHeader(key, value string) func(*Request) {
+func AddHeader(key, value string) func(*Request) {
 	return func(request *Request) {
 		if nil == request.header {
 			request.header = make(map[string]string)
@@ -104,23 +104,32 @@ func ConfigRequestAddHeader(key, value string) func(*Request) {
 }
 
 // 配置 param，每次只设置一个 key-value 对
-func ConfigRequestAddParam(key, value string) func(*Request) {
+func AddParam(key, value string) func(*Request) {
 	return func(request *Request) {
 		request.param[key] = value
 	}
 }
 
 // 配置 param，直接配置整个body
-func ConfigRequestSetParam(body string) func(*Request) {
+func SetParam(body string) func(*Request) {
 	return func(request *Request) {
 		request.body = body
 	}
 }
 
-// 配置 method
-func ConfigRequestMethod(method HTTPRequestMethod) func(*Request) {
+// 配置 method get
+func Get() func(*Request) {
 	return func(request *Request) {
-		request.method = string(method)
+		request.method = string(methodGet)
+		// POST 请求默认设置为 json body 格式
+		request.header[headerContentType] = contentTypeJson
+	}
+}
+
+// 配置 method post
+func Post() func(*Request) {
+	return func(request *Request) {
+		request.method = string(methodPost)
 		// POST 请求默认设置为 json body 格式
 		request.header[headerContentType] = contentTypeJson
 	}
@@ -128,7 +137,7 @@ func ConfigRequestMethod(method HTTPRequestMethod) func(*Request) {
 
 // 配置 post 请求方式为 urlencode
 // 注意这个方法需要在 ConfigRequestMethod 后执行
-func ConfigRequestSetPostUrlEncode() func(*Request) {
+func PostWithUrlEncode() func(*Request) {
 	return func(request *Request) {
 		request.header[headerContentType] = contentTypeUrlEncoded
 	}
@@ -166,7 +175,7 @@ func (client *httpClient) commonSendRequest(request *Request, response *Response
 		return
 	}
 
-	if request.method == string(MethodGet) {
+	if request.method == string(methodGet) {
 		query := req.URL.Query()
 		for k, v := range request.param {
 			query.Add(k, v)

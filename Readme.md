@@ -1,4 +1,5 @@
 # go common
+
 提供 go 相关的公共库，其他业务仓库使用
 如：http 客户端、公共配置解析、公共数据库基类等
 
@@ -6,7 +7,9 @@
 ## http 客户端
 
 ```
-import client "github.com/smiecj/go_common/http"
+import "github.com/smiecj/go_common/http"
+client := GetHTTPClient()
+client.Do(Get(), Url("http://..."))
 contentBytes := client.DoGetRequest(url, nil)
 ```
 
