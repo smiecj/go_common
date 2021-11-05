@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/smiecj/go_common/util/log"
@@ -16,6 +17,8 @@ var (
 		Timeout:   time.Second * 60000,
 		Transport: http.DefaultTransport,
 	}
+	defaultClientOnce sync.Once
+	clientSingleton   Client
 )
 
 const (
@@ -150,10 +153,14 @@ type httpClient struct {
 
 // 获取 http 客户端
 func GetHTTPClient() Client {
-	httpClient := new(httpClient)
-	httpClient.Client = defaultClient
+	// 单例模式
+	defaultClientOnce.Do(func() {
+		httpClient := new(httpClient)
+		httpClient.Client = defaultClient
+		clientSingleton = httpClient
+	})
 
-	return httpClient
+	return clientSingleton
 }
 
 func (client *httpClient) Do(configFuncArr ...ConfigRequestFunc) (rsp *Response, err error) {
