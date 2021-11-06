@@ -7,7 +7,7 @@ type RDBConnector interface {
 	Insert(...rdbInsertConfigFunc) (updateRet, error)
 	Update(...rdbUpdateConfigFunc) (updateRet, error)
 	Delete(...rdbDeleteConfigFunc) (updateRet, error)
-	Search(...rdbSearchConfigFunc) searchRet
+	Search(...rdbSearchConfigFunc) (searchRet, error)
 }
 
 // 更新类型动作结果
@@ -29,10 +29,14 @@ type space struct {
 	table string
 }
 
+// 获取库名.表名的格式
+func (space *space) getSpaceName() string {
+	return fmt.Sprintf("%s.%s", space.db, space.table)
+}
+
 // 数据字段定义
 type field struct {
-	key   string
-	value string
+	keyValueMap map[string]string
 }
 
 // 库表属性定义（包括表字段）
@@ -44,19 +48,16 @@ type rdbField struct {
 
 // 添加字段和对应值
 func (rdbField *rdbField) addField(keyValueMap map[string]string) {
+	newKeyValueMap := make(map[string]string, 0)
 	for key, value := range keyValueMap {
-		rdbField.fieldArr = append(rdbField.fieldArr, field{key: key, value: value})
+		newKeyValueMap[key] = value
 	}
+	rdbField.fieldArr = append(rdbField.fieldArr, field{keyValueMap: keyValueMap})
 }
 
 // 添加一整个结构体
 func (rdbField *rdbField) addObject(object interface{}) {
 	rdbField.objectArr = append(rdbField.objectArr, object)
-}
-
-// 获取库名.表名的格式
-func (rdbField *rdbField) getSpaceName() string {
-	return fmt.Sprintf("%s.%s", rdbField.db, rdbField.table)
 }
 
 // DB connect config
@@ -144,7 +145,7 @@ func UpdateSetCondition(condition UpdateCondition) func(*rdbUpdateAction) {
 
 // 删除配置
 type rdbDeleteAction struct {
-	space     space
+	space
 	condition UpdateCondition
 }
 

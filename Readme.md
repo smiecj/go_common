@@ -33,5 +33,18 @@ import log "github.com/smiecj/go_common/errorcode"
 return errorcode.ServiceError
 ```
 
-## DB 操作
+## RDB
+### 本地内存
+```
+// 存入数据
+localConnector := GetLocalMemoryConnector()
+updateRet, err := localConnector.Insert(InsertSetSpace(dbName, tableName), InsertAddField(dataMap))
+
+// 查询数据
+searchRet, err := localConnector.Search(SearchSetSpace(dbName, tableName))
+```
+
 ### 待补充
+
+# 待实现功能
+## mysql 数据库连接器
