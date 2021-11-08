@@ -142,6 +142,7 @@ func Post() func(*Request) {
 // 注意这个方法需要在 ConfigRequestMethod 后执行
 func PostWithUrlEncode() func(*Request) {
 	return func(request *Request) {
+		request.method = string(methodPost)
 		request.header[headerContentType] = contentTypeUrlEncoded
 	}
 }
