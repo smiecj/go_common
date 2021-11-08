@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/smiecj/go_common/errorcode"
 	"github.com/smiecj/go_common/util/log"
 )
 
@@ -79,6 +80,17 @@ func (req *Request) buildRequestBody() {
 			req.body = data.Encode()
 		}
 	}
+}
+
+// 检查 request 参数是否合法
+func (req *Request) checkIsValid() error {
+	if req.url == "" {
+		return errorcode.BuildError(errorcode.HandleFailed, "url is not valid: "+req.url)
+	}
+	if req.method != string(methodGet) && req.method != string(methodPost) {
+		return errorcode.BuildError(errorcode.HandleFailed, "request method is not valid: "+req.method)
+	}
+	return nil
 }
 
 type Response struct {
@@ -172,6 +184,10 @@ func (client *httpClient) Do(configFuncArr ...ConfigRequestFunc) (rsp *Response,
 		currentConfigFunc(request)
 	}
 	request.buildRequestBody()
+	err = request.checkIsValid()
+	if nil != err {
+		return nil, err
+	}
 
 	err = client.commonSendRequest(request, rsp)
 	return
