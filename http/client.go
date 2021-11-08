@@ -201,11 +201,11 @@ func (client *httpClient) commonSendRequest(request *Request, response *Response
 	endTime := time.Now()
 	log.Info("[http.client.Do] 请求URL: %s 成功，耗时: %d 秒", request.url,
 		endTime.Unix()-startTime.Unix())
-	response.RspBody = string(rspBytes)
-	response.RspHeader = make(map[string]string)
+	response.Body = string(rspBytes)
+	response.Header = make(map[string]string)
 
 	for key, valueArr := range rsp.Header {
-		response.RspHeader[key] = valueArr[0]
+		response.Header[key] = valueArr[0]
 	}
 
 	return nil

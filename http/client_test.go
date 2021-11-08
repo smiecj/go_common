@@ -14,7 +14,7 @@ func TestMakeGetRequest(t *testing.T) {
 		t.FailNow()
 	}
 
-	log.Info("[TestMakeGetRequest] request success: %s", rsp.RspBody)
+	log.Info("[TestMakeGetRequest] request success: %s", rsp.Body)
 }
 
 /* func TestMakePostUrlEncodeRequest(t *testing.T) {
