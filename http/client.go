@@ -179,6 +179,9 @@ func (client *httpClient) Do(configFuncArr ...ConfigRequestFunc) (rsp *Response,
 
 func (client *httpClient) commonSendRequest(request *Request, response *Response) (err error) {
 	req, err := http.NewRequest(request.method, request.url, strings.NewReader(request.body))
+	for key, value := range request.header {
+		req.Header.Set(key, value)
+	}
 	if err != nil {
 		log.Error("[http.client.Do] request url: %s, method: %s, make request failed: %s",
 			request.url, request.method, err.Error())
