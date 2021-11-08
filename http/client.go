@@ -82,8 +82,8 @@ func (req *Request) makeRequestBody() {
 }
 
 type Response struct {
-	RspBody   string
-	RspHeader map[string]string
+	Body   string
+	Header map[string]string
 }
 
 // 配置请求函数
