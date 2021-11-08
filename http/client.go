@@ -57,7 +57,7 @@ func buildRequest() *Request {
 
 // 构造请求结构体
 // 需要借助 method + header 共同构建
-func (req *Request) makeRequestBody() {
+func (req *Request) buildRequestBody() {
 	switch req.method {
 	case string(methodGet):
 		// GET 方法统一不需要设置body
@@ -164,12 +164,14 @@ func GetHTTPClient() Client {
 	return clientSingleton
 }
 
+// 发起http请求
 func (client *httpClient) Do(configFuncArr ...ConfigRequestFunc) (rsp *Response, err error) {
 	request := buildRequest()
 	rsp = new(Response)
 	for _, currentConfigFunc := range configFuncArr {
 		currentConfigFunc(request)
 	}
+	request.buildRequestBody()
 
 	err = client.commonSendRequest(request, rsp)
 	return
@@ -178,7 +180,7 @@ func (client *httpClient) Do(configFuncArr ...ConfigRequestFunc) (rsp *Response,
 func (client *httpClient) commonSendRequest(request *Request, response *Response) (err error) {
 	req, err := http.NewRequest(request.method, request.url, strings.NewReader(request.body))
 	if err != nil {
-		log.Error("[http.client.Do] 当前请求URL: %s, 请求 method: %s, 初始化http对象失败原因: %s",
+		log.Error("[http.client.Do] request url: %s, method: %s, make request failed: %s",
 			request.url, request.method, err.Error())
 		return
 	}
@@ -193,14 +195,14 @@ func (client *httpClient) commonSendRequest(request *Request, response *Response
 	startTime := time.Now()
 	rsp, err := defaultClient.Do(req)
 	if err != nil {
-		log.Error("[http.client.Do] 请求URL: %s, 方法: %s, 失败原因: %s", request.url,
+		log.Error("[http.client.Do] request url: %s, method: %s, do request failed: %s", request.url,
 			request.method, err.Error())
 		return err
 	}
 
 	rspBytes, _ := ioutil.ReadAll(rsp.Body)
 	endTime := time.Now()
-	log.Info("[http.client.Do] 请求URL: %s 成功，耗时: %d 秒", request.url,
+	log.Info("[http.client.Do] request url: %s success, cost: %d seconds", request.url,
 		endTime.Unix()-startTime.Unix())
 	response.Body = string(rspBytes)
 	response.Header = make(map[string]string)
