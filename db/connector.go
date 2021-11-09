@@ -39,6 +39,12 @@ type field struct {
 	keyValueMap map[string]string
 }
 
+// 公共方法: 生成一个新的 field
+func buildNewField() field {
+	field := field{keyValueMap: make(map[string]string)}
+	return field
+}
+
 // 库表属性定义（包括表字段）
 type rdbField struct {
 	space
@@ -176,6 +182,7 @@ func DeleteSetCondition(condition UpdateCondition) func(*rdbDeleteAction) {
 type rdbSearchAction struct {
 	space
 	fields    []string
+	object    interface{} // 用于 format 的文件格式，后续可能会用到
 	condition SearchCondition
 }
 

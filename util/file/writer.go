@@ -16,6 +16,7 @@ const (
 )
 
 // 覆盖/追加指定文件和内容
+// 后续: 实现一个更通用的 fileappender ，可自动插入空行
 func Write(fileAbsolutePath string, content []byte, fileMode int) int {
 	var mode int
 	switch fileMode {

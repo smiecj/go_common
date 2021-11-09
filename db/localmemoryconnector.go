@@ -3,8 +3,8 @@ package db
 import "sync"
 
 var (
-	localConnectorSingleton RDBConnector
-	localConnectorOnce sync.Once
+	localMemoryConnectorSingleton RDBConnector
+	localMemoryConnectorOnce      sync.Once
 )
 
 // 本地内存存储
@@ -12,9 +12,6 @@ type localMemoryConnector struct {
 	// db_name -> key: table name; id: uuid
 	storage map[string]map[string]string
 }
-
-// 后续: 实现本地文件存储
-// type localFileConnector struct {}
 
 func (connector *localMemoryConnector) init() {
 	connector.storage = make(map[string]map[string]string)
@@ -100,16 +97,14 @@ func (connector *localMemoryConnector) Search(funcArr ...rdbSearchConfigFunc) (s
 	}
 }
 
-
-
-// todo: 实现本地内存连接器
+// 实现本地内存连接器
 func GetLocalMemoryConnector() RDBConnector {
-	localConnectorOnce.Do(func() {
+	localMemoryConnectorOnce.Do(func() {
 		localConnector := new(localMemoryConnector)
 		localConnector.storage = make(map[string]map[string]string)
-		localConnectorSingleton = localConnector
+		localMemoryConnectorSingleton = localConnector
 	})
-	return localConnectorSingleton
+	return localMemoryConnectorSingleton
 }
 
 // 后续: 初始化 连接器配置中，增加 id generator 配置

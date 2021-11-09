@@ -1,0 +1,224 @@
+package db
+
+import (
+	"bufio"
+	"bytes"
+	"errors"
+	"fmt"
+	"os"
+	"reflect"
+	"strings"
+	"sync"
+
+	"github.com/smiecj/go_common/util/json"
+	"github.com/smiecj/go_common/util/log"
+)
+
+const (
+	fileFormatObject   = "# object"
+	fileFormatKeyValue = "# key-value"
+	keyValueSplitor    = " --- "
+	lineSeparator      = "\n"
+)
+
+var (
+	fileConnectorMap  map[string]RDBConnector
+	fileConnectorLock sync.RWMutex
+)
+
+// 本地文件存储
+type localFileConnector struct {
+	localFolderPath string
+}
+
+// 插入数据
+// 文件名: db.table
+// 文件格式:
+/*
+# object / key-value （数据格式）
+object1 string format
+object2 string format
+
+or:
+key1 --- key2 --- key3
+value1 --- value2 --- value3 (object1)
+key1 --- key2 --- key3
+value1 --- value2 --- value3 (object2)
+*/
+func (connector *localFileConnector) Insert(funcArr ...rdbInsertConfigFunc) (ret updateRet, err error) {
+	action := new(rdbInsertAction)
+	for _, currentFunc := range funcArr {
+		currentFunc(action)
+	}
+
+	fileAbsolutePath := connector.getFileAbsolutePath(action.getSpaceName())
+	file, err := os.OpenFile(fileAbsolutePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if nil != err {
+		log.Error("[localFileConnector.Insert] write file failed, file name: %s, err: %s", fileAbsolutePath, err.Error())
+		return
+	}
+	defer file.Close()
+
+	if 0 != len(action.fieldArr) {
+		// 注意: 内容中如果有换行符要替换掉
+		file.WriteString(fileFormatKeyValue)
+		for _, currentField := range action.fieldArr {
+			keyStrAppender := new(bytes.Buffer)
+			valueStrAppender := new(bytes.Buffer)
+			for key, value := range currentField.keyValueMap {
+				if keyStrAppender.Len() != 0 {
+					keyStrAppender.WriteString(keyValueSplitor)
+					valueStrAppender.WriteString(keyValueSplitor)
+				}
+				keyStrAppender.WriteString(connector.cleanInvalidChar(key))
+				valueStrAppender.WriteString(connector.cleanInvalidChar(value))
+			}
+
+			file.WriteString(keyStrAppender.String())
+			file.WriteString(lineSeparator)
+			file.WriteString(valueStrAppender.String())
+			file.WriteString(lineSeparator)
+		}
+
+		ret.AffectedRows = len(action.fieldArr)
+	} else if 0 != len(action.objectArr) {
+		for _, currentObject := range action.objectArr {
+			objectBytes, _ := json.Marshal(currentObject)
+			file.Write(objectBytes)
+			file.WriteString(lineSeparator)
+		}
+
+		ret.AffectedRows = len(action.fieldArr)
+	}
+	return
+}
+
+// 更新数据
+// 文件不支持更新，只能覆盖
+func (connector *localFileConnector) Update(funcArr ...rdbUpdateConfigFunc) (ret updateRet, err error) {
+	err = fmt.Errorf("File storage not support update")
+	return
+}
+
+// 删除数据
+// 将会直接删除整个文件
+func (connector *localFileConnector) Delete(funcArr ...rdbDeleteConfigFunc) (ret updateRet, err error) {
+	action := new(rdbDeleteAction)
+	for _, currentFunc := range funcArr {
+		currentFunc(action)
+	}
+
+	fileAbsolutePath := connector.getFileAbsolutePath(action.getSpaceName())
+	err = os.Remove(fileAbsolutePath)
+	if nil != err {
+		log.Error("[localFileConnector.Deletel] delete file failed, file name: %s, err: %s", fileAbsolutePath, err.Error())
+	}
+	// 后续: 获取文件内容中对应的数据条数
+	return
+}
+
+// 查询数据
+// todo: implement
+func (connector *localFileConnector) Search(funcArr ...rdbSearchConfigFunc) (ret searchRet, err error) {
+	action := new(rdbSearchAction)
+	for _, currentFunc := range funcArr {
+		currentFunc(action)
+	}
+
+	fileAbsolutePath := connector.getFileAbsolutePath(action.getSpaceName())
+	// 文件不存在，返回失败结果
+	if _, err := os.Stat(fileAbsolutePath); errors.Is(err, os.ErrNotExist) {
+		return ret, fmt.Errorf("File is not exists")
+	}
+
+	file, _ := os.Open(fileAbsolutePath)
+	defer file.Close()
+
+	reader := bufio.NewReader(file)
+	firstLine, _, _ := reader.ReadLine()
+	if string(firstLine) == fileFormatKeyValue {
+		ret.FieldArr = make([]field, 0)
+		for {
+			keyBytes, _, readErr := reader.ReadLine()
+			valueBytes, _, _ := reader.ReadLine()
+			if nil != readErr {
+				// read finish
+				return
+			}
+
+			keyArr := strings.Split(string(keyBytes), keyValueSplitor)
+			valueArr := strings.Split(string(valueBytes), keyValueSplitor)
+
+			currentField := buildNewField()
+			for index := 0; index < len(keyArr); index++ {
+				currentField.keyValueMap[keyArr[index]] = valueArr[index]
+			}
+			ret.FieldArr = append(ret.FieldArr, currentField)
+			ret.Total++
+		}
+	} else if string(firstLine) == fileFormatObject {
+		objValue := reflect.New(reflect.TypeOf(action.object))
+		ret.ObjectArr = make([]interface{}, 0)
+
+		for {
+			objectBytes, _, readErr := reader.ReadLine()
+			if nil != readErr {
+				// read finish
+				return
+			}
+
+			currentObj := objValue.Interface()
+			err = json.Unmarshal(objectBytes, &currentObj)
+			if nil != err {
+				log.Error("[localFileConnector.Search] object unmarshal failed, object: %s, err: %s", string(objectBytes), err.Error())
+				return
+			}
+
+			ret.ObjectArr = append(ret.ObjectArr, currentObj)
+			ret.Total++
+		}
+	} else {
+		return ret, fmt.Errorf("File format is not valid")
+	}
+}
+
+// 公共方法: 获取需要操作的文件的绝对路径
+func (connector *localFileConnector) getFileAbsolutePath(spaceName string) string {
+	return fmt.Sprintf("%s%s%s", connector.localFolderPath, os.PathSeparator, spaceName)
+}
+
+// 公共方法: 清理不合法字符
+func (connector *localFileConnector) cleanInvalidChar(toWriteStr string) (retStr string) {
+	retStr = strings.ReplaceAll(toWriteStr, "\n", "")
+	retStr = strings.ReplaceAll(retStr, keyValueSplitor, "")
+	return
+}
+
+// 获取 根据目录路径匹配的单例
+func GetLocalFileConnector(folderPath string) RDBConnector {
+	var connector RDBConnector
+	fileConnectorLock.RLock()
+	if nil == fileConnectorMap {
+		fileConnectorMap = make(map[string]RDBConnector)
+	}
+	connector = fileConnectorMap[folderPath]
+	fileConnectorLock.RUnlock()
+
+	if nil != connector {
+		return connector
+	}
+
+	fileConnectorLock.Lock()
+	defer fileConnectorLock.Unlock()
+
+	// 目录能成功创建，才能正常创建 connector
+	// todo: 判断操作的路径，不允许直接操作系统路径
+	err := os.MkdirAll(folderPath, os.ModeDir)
+	if nil != err {
+		log.Error("[GetLocalFileConnector] Get local connector failed, folder create failed: %s", folderPath)
+		return nil
+	}
+	connector = new(localFileConnector)
+	fileConnectorMap[folderPath] = connector
+	return connector
+}
