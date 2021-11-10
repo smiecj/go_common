@@ -52,16 +52,16 @@ func (connector *localFileConnector) Insert(funcArr ...rdbInsertConfigFunc) (ret
 	}
 
 	fileAbsolutePath := connector.getFileAbsolutePath(action.getSpaceName())
-	file, err := os.OpenFile(fileAbsolutePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	file, err := os.OpenFile(fileAbsolutePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
 	if nil != err {
 		log.Error("[localFileConnector.Insert] write file failed, file name: %s, err: %s", fileAbsolutePath, err.Error())
 		return
 	}
 	defer file.Close()
 
-	if 0 != len(action.fieldArr) {
-		// 注意: 内容中如果有换行符要替换掉
-		file.WriteString(fileFormatKeyValue)
+	switch {
+	case 0 != len(action.fieldArr):
+		file.WriteString(fileFormatKeyValue + lineSeparator)
 		for _, currentField := range action.fieldArr {
 			keyStrAppender := new(bytes.Buffer)
 			valueStrAppender := new(bytes.Buffer)
@@ -70,6 +70,7 @@ func (connector *localFileConnector) Insert(funcArr ...rdbInsertConfigFunc) (ret
 					keyStrAppender.WriteString(keyValueSplitor)
 					valueStrAppender.WriteString(keyValueSplitor)
 				}
+				// 注意: 内容中如果有换行符要替换掉
 				keyStrAppender.WriteString(connector.cleanInvalidChar(key))
 				valueStrAppender.WriteString(connector.cleanInvalidChar(value))
 			}
@@ -81,15 +82,16 @@ func (connector *localFileConnector) Insert(funcArr ...rdbInsertConfigFunc) (ret
 		}
 
 		ret.AffectedRows = len(action.fieldArr)
-	} else if 0 != len(action.objectArr) {
+	case 0 != len(action.objectArr):
+		file.WriteString(fileFormatObject + lineSeparator)
 		for _, currentObject := range action.objectArr {
 			objectBytes, _ := json.Marshal(currentObject)
 			file.Write(objectBytes)
 			file.WriteString(lineSeparator)
 		}
-
-		ret.AffectedRows = len(action.fieldArr)
+		ret.AffectedRows = len(action.objectArr)
 	}
+
 	return
 }
 
@@ -149,14 +151,18 @@ func (connector *localFileConnector) Search(funcArr ...rdbSearchConfigFunc) (ret
 			keyArr := strings.Split(string(keyBytes), keyValueSplitor)
 			valueArr := strings.Split(string(valueBytes), keyValueSplitor)
 
-			currentField := buildNewField()
+			currentField := BuildNewField()
 			for index := 0; index < len(keyArr); index++ {
-				currentField.keyValueMap[keyArr[index]] = valueArr[index]
+				currentField.AddKeyValue(keyArr[index], valueArr[index])
 			}
 			ret.FieldArr = append(ret.FieldArr, currentField)
 			ret.Total++
 		}
 	} else if string(firstLine) == fileFormatObject {
+		// 查询条件中 对象为空，则直接返回错误信息
+		if nil == action.object {
+			return ret, fmt.Errorf("Search base object is empty, please use 'SetSearchObject' to set object struct")
+		}
 		objValue := reflect.New(reflect.TypeOf(action.object))
 		ret.ObjectArr = make([]interface{}, 0)
 
@@ -184,7 +190,7 @@ func (connector *localFileConnector) Search(funcArr ...rdbSearchConfigFunc) (ret
 
 // 公共方法: 获取需要操作的文件的绝对路径
 func (connector *localFileConnector) getFileAbsolutePath(spaceName string) string {
-	return fmt.Sprintf("%s%s%s", connector.localFolderPath, os.PathSeparator, spaceName)
+	return fmt.Sprintf("%s%s%s", connector.localFolderPath, string(os.PathSeparator), spaceName)
 }
 
 // 公共方法: 清理不合法字符
@@ -218,7 +224,8 @@ func GetLocalFileConnector(folderPath string) RDBConnector {
 		log.Error("[GetLocalFileConnector] Get local connector failed, folder create failed: %s", folderPath)
 		return nil
 	}
-	connector = new(localFileConnector)
-	fileConnectorMap[folderPath] = connector
-	return connector
+	fileConnector := new(localFileConnector)
+	fileConnector.localFolderPath = folderPath
+	fileConnectorMap[folderPath] = fileConnector
+	return fileConnector
 }

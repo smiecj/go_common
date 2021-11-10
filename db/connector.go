@@ -1,6 +1,9 @@
 package db
 
-import "fmt"
+import (
+	"bytes"
+	"fmt"
+)
 
 // Relational data connector
 type RDBConnector interface {
@@ -40,9 +43,33 @@ type field struct {
 }
 
 // 公共方法: 生成一个新的 field
-func buildNewField() field {
-	field := field{keyValueMap: make(map[string]string)}
-	return field
+func BuildNewField() field {
+	currentField := field{keyValueMap: make(map[string]string)}
+	return currentField
+}
+
+// field 中添加单个元素
+func (field *field) AddKeyValue(key, value string) {
+	field.keyValueMap[key] = value
+}
+
+// field 中 批量添加元素
+func (field *field) AddMap(keyValueMap map[string]string) {
+	for key, value := range keyValueMap {
+		field.keyValueMap[key] = value
+	}
+}
+
+// String
+func (field *field) String() string {
+	buf := new(bytes.Buffer)
+	for key, value := range field.keyValueMap {
+		if 0 != buf.Len() {
+			buf.WriteString(", ")
+		}
+		buf.WriteString(fmt.Sprintf("%s->%s", key, value))
+	}
+	return buf.String()
 }
 
 // 库表属性定义（包括表字段）
@@ -53,12 +80,8 @@ type rdbField struct {
 }
 
 // 添加字段和对应值
-func (rdbField *rdbField) addField(keyValueMap map[string]string) {
-	newKeyValueMap := make(map[string]string, 0)
-	for key, value := range keyValueMap {
-		newKeyValueMap[key] = value
-	}
-	rdbField.fieldArr = append(rdbField.fieldArr, field{keyValueMap: keyValueMap})
+func (rdbField *rdbField) addField(field field) {
+	rdbField.fieldArr = append(rdbField.fieldArr, field)
 }
 
 // 添加一整个结构体
@@ -91,13 +114,13 @@ func InsertSetSpace(db, table string) func(*rdbInsertAction) {
 }
 
 // 添加表数据: key-value 格式
-func InsertAddField(keyValueMap map[string]string) func(*rdbInsertAction) {
+func InsertAddField(field field) func(*rdbInsertAction) {
 	return func(action *rdbInsertAction) {
-		action.rdbField.addField(keyValueMap)
+		action.rdbField.addField(field)
 	}
 }
 
-// 添加表数据: 一整个结构体
+// 添加表数据: 一整个结构体，需要能通过 json 工具类进行解析
 func InsertAddObject(object interface{}) func(*rdbInsertAction) {
 	return func(action *rdbInsertAction) {
 		action.rdbField.addObject(object)
@@ -129,9 +152,9 @@ func UpdateSetSpace(db, table string) func(*rdbUpdateAction) {
 }
 
 // 添加表数据: key-value 格式
-func UpdateAddField(keyValueMap map[string]string) func(*rdbUpdateAction) {
+func UpdateAddField(field field) func(*rdbUpdateAction) {
 	return func(action *rdbUpdateAction) {
-		action.rdbField.addField(keyValueMap)
+		action.rdbField.addField(field)
 	}
 }
 
@@ -207,6 +230,13 @@ func SearchSetSpace(db, table string) func(*rdbSearchAction) {
 func SetSearchFields(fields []string) func(*rdbSearchAction) {
 	return func(action *rdbSearchAction) {
 		action.fields = fields
+	}
+}
+
+// 设置需要查询的结构体
+func SetSearchObject(object interface{}) func(*rdbSearchAction) {
+	return func(action *rdbSearchAction) {
+		action.object = object
 	}
 }
 
