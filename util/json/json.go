@@ -5,7 +5,7 @@ import (
 )
 
 var (
-	json = jsoniter.ConfigCompatibleWithStandardLibrary
+	json = jsoniter.ConfigFastest
 )
 
 func Unmarshal(data []byte, v interface{}) error {
