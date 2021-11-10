@@ -130,10 +130,24 @@ func InsertAddField(field field) func(*rdbInsertAction) {
 	}
 }
 
+// 添加表数据: 批量添加 key-value 格式
+func InsertAddFieldArr(field []field) func(*rdbInsertAction) {
+	return func(action *rdbInsertAction) {
+		action.rdbField.addFieldArr(field)
+	}
+}
+
 // 添加表数据: 一整个结构体，需要能通过 json 工具类进行解析
 func InsertAddObject(object interface{}) func(*rdbInsertAction) {
 	return func(action *rdbInsertAction) {
 		action.rdbField.addObject(object)
+	}
+}
+
+// 添加表数据: 批量添加结构体
+func InsertAddObjectArr(objectArr []interface{}) func(*rdbInsertAction) {
+	return func(action *rdbInsertAction) {
+		action.rdbField.addObjectArr(objectArr)
 	}
 }
 
