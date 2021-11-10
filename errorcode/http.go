@@ -1,6 +1,6 @@
 package errorcode
 
 const (
-	HandleFailed  = "net_300"
-	RequestFailed = "net_301"
+	NetHandleFailed  = "net_300"
+	NetRequestFailed = "net_301"
 )

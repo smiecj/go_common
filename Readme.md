@@ -23,7 +23,7 @@ file.Write("/tmp/test.log", "content", file.ModeCreate)
 ## logger
 
 ```
-import log "github.com/smiecj/go_common/util/log"
+import "github.com/smiecj/go_common/util/log"
 log.Info("msg: %s", msg)
 ```
 
@@ -31,6 +31,9 @@ log.Info("msg: %s", msg)
 ```
 import log "github.com/smiecj/go_common/errorcode"
 return errorcode.ServiceError
+
+// 返回自定义错误
+return errorcode.BuildError(errorcode.NetHandleFailed, "connect server failed")
 ```
 
 ## RDB
@@ -38,13 +41,31 @@ return errorcode.ServiceError
 ```
 // 存入数据
 localConnector := GetLocalMemoryConnector()
-updateRet, err := localConnector.Insert(InsertSetSpace(dbName, tableName), InsertAddField(dataMap))
+insertRet, err := localConnector.Insert(InsertSetSpace(dbName, tableName), InsertAddField(field))
 
 // 查询数据
 searchRet, err := localConnector.Search(SearchSetSpace(dbName, tableName))
 ```
 
-### 待补充
+### 文件
+```
+// 存入数据
+localConnector := GetLocalFileConnector(file_store_folder)
+// insert field
+insertRet, err := localConnector.Insert(InsertSetSpace(dbName, tableName), InsertAddField(field))
+// insert object
+insertRet, err := localConnector.Insert(InsertSetSpace(dbName, tableName), InsertAddObject(obj))
+
+
+// 查询数据
+// search field
+searchRet, err := localConnector.Search(SearchSetSpace(dbName, tableName))
+// search object
+searchRet, err := localConnector.Search(SearchSetSpace(dbName, tableName), SetSearchObject(testStruct{}))
+
+```
 
 # 待实现功能
 ## mysql 数据库连接器
+
+## 自定义配置 yaml 文件解析
