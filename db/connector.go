@@ -84,9 +84,19 @@ func (rdbField *rdbField) addField(field field) {
 	rdbField.fieldArr = append(rdbField.fieldArr, field)
 }
 
+// 批量添加字段和对应值
+func (rdbField *rdbField) addFieldArr(fieldArr []field) {
+	rdbField.fieldArr = append(rdbField.fieldArr, fieldArr...)
+}
+
 // 添加一整个结构体
 func (rdbField *rdbField) addObject(object interface{}) {
 	rdbField.objectArr = append(rdbField.objectArr, object)
+}
+
+// 批量添加结构体
+func (rdbField *rdbField) addObjectArr(objectArr []interface{}) {
+	rdbField.objectArr = append(rdbField.objectArr, objectArr...)
 }
 
 // DB connect config
