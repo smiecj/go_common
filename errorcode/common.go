@@ -1,4 +1,4 @@
-import errorcode
+package errorcode
 
 const (
 	Success = "200"
