@@ -23,6 +23,7 @@ type searchRet struct {
 	ObjectArr []interface{}
 	FieldArr  []field
 	Page      int
+	Len       int
 	Total     int
 }
 
@@ -77,6 +78,8 @@ type rdbField struct {
 	space
 	objectArr []interface{}
 	fieldArr  []field
+	// 需要更新/插入的字段列表，一般在 mysql connector 中使用
+	keyArr []string
 }
 
 // 添加字段和对应值
@@ -99,6 +102,11 @@ func (rdbField *rdbField) addObjectArr(objectArr []interface{}) {
 	rdbField.objectArr = append(rdbField.objectArr, objectArr...)
 }
 
+// 批量添加表字段
+func (rdbField *rdbField) addKeyArr(keyArr []string) {
+	rdbField.keyArr = append(rdbField.keyArr, keyArr...)
+}
+
 // DB connect config
 // 插入配置
 type rdbInsertAction struct {
@@ -106,10 +114,8 @@ type rdbInsertAction struct {
 }
 
 // 创建一个插入设置
-func makeRDBAddAction() *rdbInsertAction {
+func makeRDBInsertAction() *rdbInsertAction {
 	action := new(rdbInsertAction)
-	action.objectArr = make([]interface{}, 0)
-	action.fieldArr = make([]field, 0)
 	return action
 }
 
@@ -151,6 +157,13 @@ func InsertAddObjectArr(objectArr []interface{}) func(*rdbInsertAction) {
 	}
 }
 
+// 添加表字段: 设置插入数据需要涉及的表字段列表
+func InsertAddKeyArr(keyArr []string) func(*rdbInsertAction) {
+	return func(action *rdbInsertAction) {
+		action.rdbField.addKeyArr(keyArr)
+	}
+}
+
 // 更新配置
 type rdbUpdateAction struct {
 	rdbField
@@ -160,8 +173,6 @@ type rdbUpdateAction struct {
 // 创建一个更新设置
 func makeRDBUpdateAction() *rdbUpdateAction {
 	action := new(rdbUpdateAction)
-	action.objectArr = make([]interface{}, 0)
-	action.fieldArr = make([]field, 0)
 	return action
 }
 
@@ -190,9 +201,16 @@ func UpdateAddObject(object interface{}) func(*rdbUpdateAction) {
 }
 
 // 设置更新条件
-func UpdateSetCondition(condition UpdateCondition) func(*rdbUpdateAction) {
+func UpdateSetCondition(args ...string) func(*rdbUpdateAction) {
 	return func(action *rdbUpdateAction) {
-		action.condition = condition
+		action.condition.WhereArr = buildWhereConditionArr(args...)
+	}
+}
+
+// 添加表字段: 设置更新数据需要涉及的表字段列表
+func UpdateAddKeyArr(keyArr []string) func(*rdbInsertAction) {
+	return func(action *rdbInsertAction) {
+		action.rdbField.addKeyArr(keyArr)
 	}
 }
 
@@ -225,10 +243,17 @@ func DeleteSetCondition(condition UpdateCondition) func(*rdbDeleteAction) {
 	}
 }
 
+// 设置删除数据量
+func DeleteSetLimit(limit int) func(*rdbDeleteAction) {
+	return func(action *rdbDeleteAction) {
+		action.condition.Limit = limit
+	}
+}
+
 // 查询配置
 type rdbSearchAction struct {
 	space
-	fields    []string
+	keyArr    []string
 	object    interface{} // 用于 format 的文件格式，后续可能会用到
 	condition SearchCondition
 }
@@ -236,7 +261,6 @@ type rdbSearchAction struct {
 // 创建一个查询配置
 func makeRDBSearchAction() *rdbSearchAction {
 	action := new(rdbSearchAction)
-	action.fields = make([]string, 0)
 	return action
 }
 
@@ -251,9 +275,9 @@ func SearchSetSpace(db, table string) func(*rdbSearchAction) {
 }
 
 // 设置需要查询的字段
-func SetSearchFields(fields []string) func(*rdbSearchAction) {
+func SetSearchKeyArr(keyArr []string) func(*rdbSearchAction) {
 	return func(action *rdbSearchAction) {
-		action.fields = fields
+		action.keyArr = append(action.keyArr, keyArr...)
 	}
 }
 
@@ -265,8 +289,18 @@ func SetSearchObject(object interface{}) func(*rdbSearchAction) {
 }
 
 // 设置查询条件
-func SetSearchCondition(condition SearchCondition) func(*rdbSearchAction) {
+func SetSearchCondition(args ...string) func(*rdbSearchAction) {
 	return func(action *rdbSearchAction) {
-		action.condition = condition
+		action.condition.WhereArr = buildWhereConditionArr(args...)
 	}
 }
+
+// 设置分页条件
+func SetPageCondition(start, limit int) func(*rdbSearchAction) {
+	return func(action *rdbSearchAction) {
+		action.condition.Page.No, action.condition.Page.Limit = start/limit, limit
+	}
+}
+
+// 后续: 设置排序条件
+// 最好通过 表名 + 字段名 + 顺序 的方式来设置

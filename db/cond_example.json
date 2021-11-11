@@ -1,9 +1,9 @@
 {
     "where": [
         {
-            "type": "condition",
+            "type": "assert",
             "key": "id",
-            "method": "=",
+            "method": "equal",
             "value": "1"
         },
         {
@@ -11,7 +11,7 @@
             "type": "or"
         },
         {
-            "type": "condition",
+            "type": "assert",
             "key": "name",
             "method": "like",
             "value": "smiecj"

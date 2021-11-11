@@ -19,7 +19,7 @@ func (connector *localMemoryConnector) init() {
 
 // 本地存储: 插入数据
 func (connector *localMemoryConnector) Insert(funcArr ...rdbInsertConfigFunc) (updateRet, error) {
-	action := makeRDBAddAction()
+	action := makeRDBInsertAction()
 	for _, currentFunc := range funcArr {
 		currentFunc(action)
 	}
@@ -87,13 +87,13 @@ func (connector *localMemoryConnector) Search(funcArr ...rdbSearchConfigFunc) (s
 	// 查询: 按照 spaceName 查询
 	spaceName := action.getSpaceName()
 	if nil == connector.storage[spaceName] {
-		return searchRet{Total: 0}, nil
+		return searchRet{Len: 0}, nil
 	} else {
 		currentField := field{keyValueMap: map[string]string{}}
 		for key, value := range connector.storage[spaceName] {
 			currentField.keyValueMap[key] = value
 		}
-		return searchRet{Total: 1, FieldArr: []field{currentField}}, nil
+		return searchRet{Len: 1, FieldArr: []field{currentField}}, nil
 	}
 }
 

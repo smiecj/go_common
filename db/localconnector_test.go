@@ -32,7 +32,7 @@ func TestLocalMemoryConnector(t *testing.T) {
 	updateRet, _ := localConnector.Insert(InsertSetSpace(testDBName, testTableName), InsertAddField(field))
 	log.Info("[TestLocalConnector] update affected rows: %d", updateRet.AffectedRows)
 	searchRet, _ := localConnector.Search(SearchSetSpace(testDBName, testTableName))
-	log.Info("[TestLocalConnector] search rows: %d", searchRet.Total)
+	log.Info("[TestLocalConnector] search rows: %d", searchRet.Len)
 }
 
 func TestLocalFileConnector(t *testing.T) {
@@ -47,7 +47,7 @@ func TestLocalFileConnector(t *testing.T) {
 
 	searchRet, err := localConnector.Search(SearchSetSpace(testDBName, testTableName))
 	require.Equal(t, nil, err)
-	require.Less(t, 0, searchRet.Total)
+	require.Less(t, 0, searchRet.Len)
 	for index, currentField := range searchRet.FieldArr {
 		log.Info("[TestLocalFileConnector] search ret: index: %d, field: %s", index, currentField)
 	}
@@ -59,7 +59,7 @@ func TestLocalFileConnector(t *testing.T) {
 
 	searchRet, err = localConnector.Search(SearchSetSpace(testDBName, testTableName), SetSearchObject(testStruct{}))
 	require.Equal(t, nil, err)
-	require.Less(t, 0, searchRet.Total)
+	require.Less(t, 0, searchRet.Len)
 	for index, currentObject := range searchRet.ObjectArr {
 		log.Info("[TestLocalFileConnector] search ret: index: %d, object: %s", index, currentObject)
 	}

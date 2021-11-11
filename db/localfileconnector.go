@@ -46,7 +46,7 @@ key1 --- key2 --- key3
 value1 --- value2 --- value3 (object2)
 */
 func (connector *localFileConnector) Insert(funcArr ...rdbInsertConfigFunc) (ret updateRet, err error) {
-	action := new(rdbInsertAction)
+	action := makeRDBInsertAction()
 	for _, currentFunc := range funcArr {
 		currentFunc(action)
 	}
@@ -92,6 +92,7 @@ func (connector *localFileConnector) Insert(funcArr ...rdbInsertConfigFunc) (ret
 		ret.AffectedRows = len(action.objectArr)
 	}
 
+	log.Info("[localFileConnector.Insert] Write file success, rows: %d", ret.AffectedRows)
 	return
 }
 
@@ -105,7 +106,7 @@ func (connector *localFileConnector) Update(funcArr ...rdbUpdateConfigFunc) (ret
 // 删除数据
 // 将会直接删除整个文件
 func (connector *localFileConnector) Delete(funcArr ...rdbDeleteConfigFunc) (ret updateRet, err error) {
-	action := new(rdbDeleteAction)
+	action := makeRDBDeleteAction()
 	for _, currentFunc := range funcArr {
 		currentFunc(action)
 	}
@@ -122,7 +123,7 @@ func (connector *localFileConnector) Delete(funcArr ...rdbDeleteConfigFunc) (ret
 // 查询数据
 // todo: implement
 func (connector *localFileConnector) Search(funcArr ...rdbSearchConfigFunc) (ret searchRet, err error) {
-	action := new(rdbSearchAction)
+	action := makeRDBSearchAction()
 	for _, currentFunc := range funcArr {
 		currentFunc(action)
 	}
@@ -156,13 +157,14 @@ func (connector *localFileConnector) Search(funcArr ...rdbSearchConfigFunc) (ret
 				currentField.AddKeyValue(keyArr[index], valueArr[index])
 			}
 			ret.FieldArr = append(ret.FieldArr, currentField)
-			ret.Total++
+			ret.Len++
 		}
 	} else if string(firstLine) == fileFormatObject {
 		// 查询条件中 对象为空，则直接返回错误信息
 		if nil == action.object {
 			return ret, fmt.Errorf("Search base object is empty, please use 'SetSearchObject' to set object struct")
 		}
+		// reflect
 		objValue := reflect.New(reflect.TypeOf(action.object))
 		ret.ObjectArr = make([]interface{}, 0)
 
@@ -181,7 +183,7 @@ func (connector *localFileConnector) Search(funcArr ...rdbSearchConfigFunc) (ret
 			}
 
 			ret.ObjectArr = append(ret.ObjectArr, currentObj)
-			ret.Total++
+			ret.Len++
 		}
 	} else {
 		return ret, fmt.Errorf("File format is not valid")

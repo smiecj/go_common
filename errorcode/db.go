@@ -1,6 +1,7 @@
 package errorcode
 
 const (
-	ExecFailed  = "db_301"
-	ExecTimeout = "db_302"
+	DBParamInvalid = "db_201"
+	DBExecFailed   = "db_301"
+	DBExecTimeout  = "db_302"
 )
