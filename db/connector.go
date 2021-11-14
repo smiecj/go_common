@@ -3,6 +3,7 @@ package db
 import (
 	"bytes"
 	"fmt"
+	"reflect"
 )
 
 // Relational data connector
@@ -20,7 +21,7 @@ type updateRet struct {
 
 // 查询类型动作结果
 type searchRet struct {
-	ObjectArr []interface{}
+	ObjectArr interface{}
 	FieldArr  []field
 	Page      int
 	Len       int
@@ -77,6 +78,8 @@ func (field *field) String() string {
 type rdbField struct {
 	space
 	objectArr []interface{}
+	// 插入的数组类型
+	objectArrType reflect.Type
 	fieldArr  []field
 	// 需要更新/插入的字段列表，一般在 mysql connector 中使用
 	keyArr []string
@@ -105,6 +108,11 @@ func (rdbField *rdbField) addObjectArr(objectArr []interface{}) {
 // 批量添加表字段
 func (rdbField *rdbField) addKeyArr(keyArr []string) {
 	rdbField.keyArr = append(rdbField.keyArr, keyArr...)
+}
+
+// 设置插入的数组类型
+func (rdbField *rdbField) setObjectArrType(t reflect.Type) {
+	rdbField.objectArrType = t
 }
 
 // DB connect config
@@ -154,6 +162,13 @@ func InsertAddObject(object interface{}) func(*rdbInsertAction) {
 func InsertAddObjectArr(objectArr []interface{}) func(*rdbInsertAction) {
 	return func(action *rdbInsertAction) {
 		action.rdbField.addObjectArr(objectArr)
+	}
+}
+
+// 设置表字段: 设置需要插入的结构体数组类型
+func InsertSetObjectArrType(arr interface{}) func(*rdbInsertAction) {
+	return func(action *rdbInsertAction) {
+		action.setObjectArrType(reflect.TypeOf(arr))
 	}
 }
 
@@ -254,7 +269,8 @@ func DeleteSetLimit(limit int) func(*rdbDeleteAction) {
 type rdbSearchAction struct {
 	space
 	keyArr    []string
-	object    interface{} // 用于 format 的文件格式，后续可能会用到
+	object    interface{} // 用于 format 对象的类型
+	objectArrType reflect.Type // 用于生成最后的对象数组的类型
 	condition SearchCondition
 }
 
@@ -288,6 +304,13 @@ func SetSearchObject(object interface{}) func(*rdbSearchAction) {
 	}
 }
 
+// 设置需要返回的结构体数组类型
+func SetSearchObjectArrType(arr interface{}) func(*rdbSearchAction) {
+	return func(action *rdbSearchAction) {
+		action.objectArrType = reflect.TypeOf(arr)
+	}
+}
+
 // 设置查询条件
 func SetSearchCondition(args ...string) func(*rdbSearchAction) {
 	return func(action *rdbSearchAction) {
@@ -296,7 +319,7 @@ func SetSearchCondition(args ...string) func(*rdbSearchAction) {
 }
 
 // 设置分页条件
-func SetPageCondition(start, limit int) func(*rdbSearchAction) {
+func SetSearchPageCondition(start, limit int) func(*rdbSearchAction) {
 	return func(action *rdbSearchAction) {
 		action.condition.Page.No, action.condition.Page.Limit = start/limit, limit
 	}

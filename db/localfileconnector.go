@@ -160,29 +160,31 @@ func (connector *localFileConnector) Search(funcArr ...rdbSearchConfigFunc) (ret
 			ret.Len++
 		}
 	} else if string(firstLine) == fileFormatObject {
-		// 查询条件中 对象为空，则直接返回错误信息
-		if nil == action.object {
+		// 查询条件中 对象为空 或者是 结果数组类型为空，则直接返回错误信息
+		if nil == action.object || nil == action.objectArrType {
 			return ret, fmt.Errorf("Search base object is empty, please use 'SetSearchObject' to set object struct")
 		}
 		// reflect
 		objValue := reflect.New(reflect.TypeOf(action.object))
+		objectReflectArr := reflect.MakeSlice(action.objectArrType, 0, 0)
 		ret.ObjectArr = make([]interface{}, 0)
 
 		for {
 			objectBytes, _, readErr := reader.ReadLine()
 			if nil != readErr {
 				// read finish
+				ret.ObjectArr = objectReflectArr.Interface()
 				return
 			}
 
 			currentObj := objValue.Interface()
-			err = json.Unmarshal(objectBytes, &currentObj)
+			err = json.Unmarshal(objectBytes, currentObj)
 			if nil != err {
 				log.Error("[localFileConnector.Search] object unmarshal failed, object: %s, err: %s", string(objectBytes), err.Error())
 				return
 			}
 
-			ret.ObjectArr = append(ret.ObjectArr, currentObj)
+			objectReflectArr = reflect.Append(objectReflectArr, reflect.ValueOf(currentObj))
 			ret.Len++
 		}
 	} else {

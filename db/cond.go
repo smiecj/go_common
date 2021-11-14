@@ -48,7 +48,7 @@ func (arr whereArr) toSQL() string {
 	for _, currentCond := range arr {
 		switch currentCond.Type {
 		case conditionTypeAssert:
-			buffer.WriteString(fmt.Sprintf("%s %s %s",
+			buffer.WriteString(fmt.Sprintf("%s %s '%s'",
 				currentCond.Key, methodToKeywordMap[string(currentCond.Method)], currentCond.Value))
 		case conditionTypeAnd, conditionTypeOr:
 			buffer.WriteString(fmt.Sprintf(" %s ", currentCond.Type))
@@ -58,8 +58,7 @@ func (arr whereArr) toSQL() string {
 }
 
 // 通过传入的条件 生成 whereCondition
-// 格式: "name", "equal", "xiaoming", "and", "grade", "equal", "3"
-// 思考: 这种传入方式虽然不是很方便，但是对外层算是对 SQL 进行了比较彻底的封装，这样对功能抽象是有好处的
+// 格式: "name", "equal" / "=", "xiaoming", "and", "grade", "equal" / "=", "3"
 func buildWhereConditionArr(args ...string) whereArr {
 	retArr := make(whereArr, 0)
 	index := 0
@@ -70,11 +69,16 @@ func buildWhereConditionArr(args ...string) whereArr {
 		case string(conditionTypeAnd), string(conditionTypeOr):
 			currentCondition.Type = conditionType(currentArg)
 		default:
-			if index+2 >= len(args) || methodToKeywordMap[args[index+1]] == "" {
+			if index+2 >= len(args) || (methodToKeywordMap[args[index+1]] == "" && keyWordToMethodMap[args[index+1]] == "") {
 				break
 			}
+			conditionMethod := conditionMethod(args[index+1])
+			if methodToKeywordMap[args[index+1]] == "" {
+				conditionMethod = keyWordToMethodMap[args[index+1]]
+			}
+			
 			currentCondition.Key, currentCondition.Method, currentCondition.Value =
-				currentArg, conditionMethod(args[index+1]), args[index+2]
+				currentArg, conditionMethod, args[index+2]
 			currentCondition.Type = conditionTypeAssert
 		}
 		retArr = append(retArr, currentCondition)

@@ -22,7 +22,6 @@ type MySQLConnectOption struct {
 	Port     int
 	User     string
 	Password string
-	Database string
 	IsSSL    bool
 }
 
@@ -56,7 +55,16 @@ func (connector *mysqlConnector) Insert(funcArr ...rdbInsertConfigFunc) (ret upd
 		if len(action.keyArr) != 0 {
 			searchKeyArr = action.keyArr
 		}
-		dbRet = connector.db.Table(action.getSpaceName()).Select(searchKeyArr).Create(action.objectArr)
+		// 注意数组类型需要转换一下，传入的 interface{} 数组无法被 gorm 识别
+		var toInsertArr interface{} = action.objectArr
+		if nil != action.objectArrType {
+			slice := reflect.MakeSlice(action.objectArrType, 0, 0)
+			for _, currentObj := range action.objectArr {
+				slice = reflect.Append(slice, reflect.ValueOf(currentObj))
+			}
+			toInsertArr = slice.Interface()
+		}
+		dbRet = connector.db.Table(action.getSpaceName()).Select(searchKeyArr).Create(toInsertArr)
 	} else {
 		return ret, errorcode.BuildError(errorcode.DBParamInvalid, "Insert failed: to insert data is empty")
 	}
@@ -139,13 +147,13 @@ func (connector *mysqlConnector) Search(funcArr ...rdbSearchConfigFunc) (ret sea
 
 	var dbRet *gorm.DB
 
-	if nil != action.object {
-		objectArr := reflect.MakeSlice(reflect.TypeOf(action.object), 0, 0)
+	if  nil != action.objectArrType {
+		objectReflectArr := reflect.MakeSlice(action.objectArrType, 0, 0).Interface()
 		dbRet = connector.db.Table(action.getSpaceName()).
 			Select(action.keyArr).Where(action.condition.WhereArr.toSQL()).
 			Offset(action.condition.Page.No * action.condition.Page.Limit).Limit(action.condition.Page.Limit).
-			Find(&objectArr)
-		ret.ObjectArr = objectArr.Interface().([]interface{})
+			Find(&objectReflectArr)
+		ret.ObjectArr = objectReflectArr
 	} else {
 		// 非导入到 object 情况，存在 value 在转换的时候不准确的问题，需要测试
 		keyValueMapArr := make([]map[string]interface{}, 0)
@@ -191,18 +199,18 @@ func GetMySQLConnector(option MySQLConnectOption) RDBConnector {
 	defer fileConnectorLock.Unlock()
 
 	extendParam := ""
-	connectStr := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8mb4%s",
-		option.User, option.Password, option.Host, option.Port, option.Database, extendParam)
+	connectStr := fmt.Sprintf("%s:%s@tcp(%s:%d)/?charset=utf8mb4%s",
+		option.User, option.Password, option.Host, option.Port, extendParam)
 	db, err := gorm.Open(mysql.Open(connectStr), &gorm.Config{})
 
 	// mysql 连接能成功创建，并执行 SQL, 才算是创建成功
 	if nil != err {
-		log.Error("[GetMySQLConnector] Get mysql connector failed, please check config: %s", connectStr)
+		log.Error("[GetMySQLConnector] Get mysql connector failed, please check config: %s, err: %s", connectStr, err.Error())
 		return nil
 	}
 	err = db.Exec("SELECT 1;").Error
 	if nil != err {
-		log.Error("[GetMySQLConnector] Exec mysql check sql failed, please check config: %s", connectStr)
+		log.Error("[GetMySQLConnector] Exec mysql check sql failed, please check config: %s, err: %s", connectStr, err.Error())
 		return nil
 	}
 	mysqlConnector := new(mysqlConnector)

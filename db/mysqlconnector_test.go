@@ -3,14 +3,15 @@ package db
 import (
 	"testing"
 
+	"github.com/smiecj/go_common/util/log"
 	"github.com/stretchr/testify/require"
 )
 
 const (
-	testMySQLHost     = "localhost"
-	testMySQLPort     = 23306
-	testMySQLUser     = "root"
-	testMySQLPassword = "root123"
+	testMySQLHost     = "test_host"
+	testMySQLPort     = 3306
+	testMySQLUser     = "test_user"
+	testMySQLPassword = "test_password"
 
 	testMySQLDBName    = "temp"
 	testMySQLTableName = "test_student"
@@ -24,17 +25,47 @@ var (
 	}
 )
 
+// 测试mysql 操作的结构体
+/*
+CREATE TABLE temp.test_student (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `name` varchar(32) NOT NULL COMMENT '学生名',
+  `grade` int(1) DEFAULT 1 COMMENT '年级',
+   PRIMARY KEY (`id`),
+  KEY `name_index` (`name`)
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4;
+*/
 type testStudent struct {
 	Name  string `gorm:"column:name"`
 	Grade int    `gorm:"column:grade"`
 }
 
+type studentSlice []testStudent
+
 func TestMySQLConnector(t *testing.T) {
 	// todo: 增删改查测试
 	connector := GetMySQLConnector(
-		MySQLConnectOption{Host: "localhost", Port: 23306, User: testMySQLUser, Password: testMySQLPassword})
+		MySQLConnectOption{Host: testMySQLHost, Port: testMySQLPort, User: testMySQLUser, Password: testMySQLPassword})
 
-	ret, err := connector.Insert(InsertSetSpace(testMySQLDBName, testTableName), InsertAddObjectArr(testStudentArr))
+	// 插入
+	var testStudentSlice studentSlice
+	updateRet, err := connector.Insert(InsertSetSpace(testMySQLDBName, testMySQLTableName), 
+	InsertAddObjectArr(testStudentArr), InsertSetObjectArrType(testStudentSlice))
 	require.Equal(t, nil, err)
-	require.Equal(t, len(testStudentArr), ret.AffectedRows)
+	require.Equal(t, len(testStudentArr), updateRet.AffectedRows)
+
+	// 查询
+	searchRet, err := connector.Search(SearchSetSpace(testMySQLDBName, testMySQLTableName), 
+		SetSearchCondition("name", "=", "xiaoming"), SetSearchObjectArrType(testStudentSlice), SetSearchPageCondition(0, 10))
+	require.Equal(t, nil, err)
+	require.LessOrEqual(t, 1, searchRet.Len)
+	studentArr := searchRet.ObjectArr.(studentSlice)
+	log.Info("[TestMySQLConnector] object arr len: %d", len(studentArr))
+	for _, currentStudent := range studentArr {
+		log.Info("[TestMySQLConnector] current student: %v", currentStudent)
+	}
+	
+	// todo: 更新
+
+	// todo: 删除
 }

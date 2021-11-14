@@ -57,10 +57,13 @@ func TestLocalFileConnector(t *testing.T) {
 	require.Equal(t, nil, err)
 	require.Less(t, 0, insertRet.AffectedRows)
 
-	searchRet, err = localConnector.Search(SearchSetSpace(testDBName, testTableName), SetSearchObject(testStruct{}))
+	// 注意 因为 reflect 包 interface{} 方法返回的是指针，所以 SetSearchObjectArrType 一般需要设置指针数组，否则会转换失败
+	searchRet, err = localConnector.Search(SearchSetSpace(testDBName, testTableName), 
+		SetSearchObject(testStruct{}), SetSearchObjectArrType([]*testStruct{}))
 	require.Equal(t, nil, err)
 	require.Less(t, 0, searchRet.Len)
-	for index, currentObject := range searchRet.ObjectArr {
-		log.Info("[TestLocalFileConnector] search ret: index: %d, object: %s", index, currentObject)
+	testStructArr := searchRet.ObjectArr.([]*testStruct)
+	for index, currentStruct := range testStructArr {
+		log.Info("[TestLocalFileConnector] search ret: index: %d, object: %s", index, currentStruct)
 	}
 }
