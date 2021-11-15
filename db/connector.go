@@ -80,7 +80,7 @@ type rdbField struct {
 	objectArr []interface{}
 	// 插入的数组类型
 	objectArrType reflect.Type
-	fieldArr  []field
+	fieldArr      []field
 	// 需要更新/插入的字段列表，一般在 mysql connector 中使用
 	keyArr []string
 }
@@ -223,8 +223,8 @@ func UpdateSetCondition(args ...string) func(*rdbUpdateAction) {
 }
 
 // 添加表字段: 设置更新数据需要涉及的表字段列表
-func UpdateAddKeyArr(keyArr []string) func(*rdbInsertAction) {
-	return func(action *rdbInsertAction) {
+func UpdateAddKeyArr(keyArr []string) func(*rdbUpdateAction) {
+	return func(action *rdbUpdateAction) {
 		action.rdbField.addKeyArr(keyArr)
 	}
 }
@@ -252,9 +252,9 @@ func DeleteSetSpace(db, table string) func(*rdbDeleteAction) {
 }
 
 // 设置删除条件
-func DeleteSetCondition(condition UpdateCondition) func(*rdbDeleteAction) {
+func DeleteSetCondition(args ...string) func(*rdbDeleteAction) {
 	return func(action *rdbDeleteAction) {
-		action.condition = condition
+		action.condition.WhereArr = buildWhereConditionArr(args...)
 	}
 }
 
@@ -268,10 +268,10 @@ func DeleteSetLimit(limit int) func(*rdbDeleteAction) {
 // 查询配置
 type rdbSearchAction struct {
 	space
-	keyArr    []string
-	object    interface{} // 用于 format 对象的类型
+	keyArr        []string
+	object        interface{}  // 用于 format 对象的类型
 	objectArrType reflect.Type // 用于生成最后的对象数组的类型
-	condition SearchCondition
+	condition     SearchCondition
 }
 
 // 创建一个查询配置
@@ -291,35 +291,35 @@ func SearchSetSpace(db, table string) func(*rdbSearchAction) {
 }
 
 // 设置需要查询的字段
-func SetSearchKeyArr(keyArr []string) func(*rdbSearchAction) {
+func SearchSetKeyArr(keyArr []string) func(*rdbSearchAction) {
 	return func(action *rdbSearchAction) {
 		action.keyArr = append(action.keyArr, keyArr...)
 	}
 }
 
 // 设置需要查询的结构体
-func SetSearchObject(object interface{}) func(*rdbSearchAction) {
+func SearchSetObject(object interface{}) func(*rdbSearchAction) {
 	return func(action *rdbSearchAction) {
 		action.object = object
 	}
 }
 
 // 设置需要返回的结构体数组类型
-func SetSearchObjectArrType(arr interface{}) func(*rdbSearchAction) {
+func SearchSetObjectArrType(arr interface{}) func(*rdbSearchAction) {
 	return func(action *rdbSearchAction) {
 		action.objectArrType = reflect.TypeOf(arr)
 	}
 }
 
 // 设置查询条件
-func SetSearchCondition(args ...string) func(*rdbSearchAction) {
+func SearchSetCondition(args ...string) func(*rdbSearchAction) {
 	return func(action *rdbSearchAction) {
 		action.condition.WhereArr = buildWhereConditionArr(args...)
 	}
 }
 
 // 设置分页条件
-func SetSearchPageCondition(start, limit int) func(*rdbSearchAction) {
+func SearchSetPageCondition(start, limit int) func(*rdbSearchAction) {
 	return func(action *rdbSearchAction) {
 		action.condition.Page.No, action.condition.Page.Limit = start/limit, limit
 	}

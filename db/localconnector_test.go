@@ -57,9 +57,8 @@ func TestLocalFileConnector(t *testing.T) {
 	require.Equal(t, nil, err)
 	require.Less(t, 0, insertRet.AffectedRows)
 
-	// 注意 因为 reflect 包 interface{} 方法返回的是指针，所以 SetSearchObjectArrType 一般需要设置指针数组，否则会转换失败
-	searchRet, err = localConnector.Search(SearchSetSpace(testDBName, testTableName), 
-		SetSearchObject(testStruct{}), SetSearchObjectArrType([]*testStruct{}))
+	searchRet, err = localConnector.Search(SearchSetSpace(testDBName, testTableName),
+		SearchSetObject(testStruct{}), SearchSetObjectArrType([]*testStruct{}))
 	require.Equal(t, nil, err)
 	require.Less(t, 0, searchRet.Len)
 	testStructArr := searchRet.ObjectArr.([]*testStruct)

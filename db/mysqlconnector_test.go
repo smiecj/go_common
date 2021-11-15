@@ -43,20 +43,19 @@ type testStudent struct {
 type studentSlice []testStudent
 
 func TestMySQLConnector(t *testing.T) {
-	// todo: 增删改查测试
 	connector := GetMySQLConnector(
 		MySQLConnectOption{Host: testMySQLHost, Port: testMySQLPort, User: testMySQLUser, Password: testMySQLPassword})
 
 	// 插入
 	var testStudentSlice studentSlice
-	updateRet, err := connector.Insert(InsertSetSpace(testMySQLDBName, testMySQLTableName), 
-	InsertAddObjectArr(testStudentArr), InsertSetObjectArrType(testStudentSlice))
+	insertRet, err := connector.Insert(InsertSetSpace(testMySQLDBName, testMySQLTableName),
+		InsertAddObjectArr(testStudentArr), InsertSetObjectArrType(testStudentSlice))
 	require.Equal(t, nil, err)
-	require.Equal(t, len(testStudentArr), updateRet.AffectedRows)
+	require.Equal(t, len(testStudentArr), insertRet.AffectedRows)
 
 	// 查询
-	searchRet, err := connector.Search(SearchSetSpace(testMySQLDBName, testMySQLTableName), 
-		SetSearchCondition("name", "=", "xiaoming"), SetSearchObjectArrType(testStudentSlice), SetSearchPageCondition(0, 10))
+	searchRet, err := connector.Search(SearchSetSpace(testMySQLDBName, testMySQLTableName),
+		SearchSetCondition("name", "=", "xiaoming"), SearchSetObjectArrType(testStudentSlice), SearchSetPageCondition(0, 10))
 	require.Equal(t, nil, err)
 	require.LessOrEqual(t, 1, searchRet.Len)
 	studentArr := searchRet.ObjectArr.(studentSlice)
@@ -64,8 +63,17 @@ func TestMySQLConnector(t *testing.T) {
 	for _, currentStudent := range studentArr {
 		log.Info("[TestMySQLConnector] current student: %v", currentStudent)
 	}
-	
-	// todo: 更新
 
-	// todo: 删除
+	// 更新
+	updateRet, err := connector.Update(UpdateSetSpace(testMySQLDBName, testMySQLTableName),
+		UpdateSetCondition("name", "=", "xiaoming"),
+		UpdateAddObject(testStudent{Grade: 2}), UpdateAddKeyArr([]string{"grade"}))
+	require.Equal(t, nil, err)
+	require.LessOrEqual(t, 1, updateRet.AffectedRows)
+
+	// 删除
+	deleteRet, err := connector.Delete(DeleteSetSpace(testMySQLDBName, testMySQLTableName),
+		DeleteSetCondition("name", "=", "xiaoming"))
+	require.Equal(t, nil, err)
+	require.LessOrEqual(t, 1, deleteRet.AffectedRows)
 }

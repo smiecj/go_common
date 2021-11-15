@@ -162,7 +162,7 @@ func (connector *localFileConnector) Search(funcArr ...rdbSearchConfigFunc) (ret
 	} else if string(firstLine) == fileFormatObject {
 		// 查询条件中 对象为空 或者是 结果数组类型为空，则直接返回错误信息
 		if nil == action.object || nil == action.objectArrType {
-			return ret, fmt.Errorf("Search base object is empty, please use 'SetSearchObject' to set object struct")
+			return ret, fmt.Errorf("Search base object is empty, please use 'SearchSetObject' to set object struct")
 		}
 		// reflect
 		objValue := reflect.New(reflect.TypeOf(action.object))

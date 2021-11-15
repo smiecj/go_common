@@ -61,8 +61,31 @@ insertRet, err := localConnector.Insert(InsertSetSpace(dbName, tableName), Inser
 // search field
 searchRet, err := localConnector.Search(SearchSetSpace(dbName, tableName))
 // search object
-searchRet, err := localConnector.Search(SearchSetSpace(dbName, tableName), SetSearchObject(testStruct{}))
+searchRet, err := localConnector.Search(SearchSetSpace(dbName, tableName), SearchSetObject(testStruct{}), SearchSetObjectArrType([]*testStruct{}))
+// 注意 因为 通过 reflect 包 生成新对象 （调用 interface{} 方法）返回的是指针， 所以 SearchSetObjectArrType 一般需要设置指针数组，否则会转换失败
+```
 
+### mysql (gorm)
+```
+// 存入数据
+insertRet, err := connector.Insert(InsertSetSpace("db_name", "table_name"), 
+    InsertAddObjectArr([]objectArr{obj1, obj2}), InsertSetObjectArrType([]object{}))
+// 备注: 设置插入的数据数组格式的时候，直接插入一个大小为0 的数组即可，connector 内部逻辑会赋予 reflect.Type 格式
+// 为什么需要 objectArrType: 和gorm的机制有关系，[]interface{} 类型无法正常判断数组内成员的 gorm tag
+
+// 更新数据
+updateRet, err := connector.Update(UpdateSetSpace("db_name", "table_name"),
+		UpdateSetCondition("ID", "=", "1"),
+		UpdateAddObject(object{Name: "ToUpdateName"}), UpdateAddKeyArr([]string{"name"}))
+// 注意: gorm 默认会修改所有的字段，最好是通过 UpdateAddKeyArr 设置需要修改的字段列表
+
+// 查询数据
+searchRet, err := connector.Search(SearchSetSpace("db_name", "table_name"),
+    SearchSetCondition("ID", "=", "1"), SearchSetObjectArrType([]object{}), SearchSetPageCondition(0, 10))
+
+// 删除数据
+deleteRet, err := connector.Delete(DeleteSetSpace("db_name", "table_name"),
+		DeleteSetCondition("ID", "=", "1"))
 ```
 
 # 待实现功能

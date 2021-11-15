@@ -9,6 +9,7 @@ import (
 	"github.com/smiecj/go_common/util/log"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 var (
@@ -100,7 +101,7 @@ func (connector *mysqlConnector) Update(funcArr ...rdbUpdateConfigFunc) (ret upd
 		if len(action.keyArr) != 0 {
 			searchKeyArr = action.keyArr
 		}
-		dbRet = connector.db.Table(action.getSpaceName()).Select(searchKeyArr).Updates(action.objectArr[0])
+		dbRet = connector.db.Table(action.getSpaceName()).Where(action.condition.WhereArr.toSQL()).Select(searchKeyArr).Updates(action.objectArr[0])
 	} else {
 		return ret, errorcode.BuildError(errorcode.DBParamInvalid, "Insert failed: to insert data is empty")
 	}
@@ -126,8 +127,8 @@ func (connector *mysqlConnector) Delete(funcArr ...rdbDeleteConfigFunc) (ret upd
 		limitCondition = fmt.Sprintf("limit %d", action.condition.Limit)
 	}
 
-	dbRet := connector.db.Exec("DELETE FROM %s WHERE %s %s",
-		action.getSpaceName(), action.condition.WhereArr.toSQL(), limitCondition)
+	dbRet := connector.db.Exec(fmt.Sprintf("DELETE FROM %s WHERE %s %s",
+		action.getSpaceName(), action.condition.WhereArr.toSQL(), limitCondition))
 	ret.AffectedRows, err = int(dbRet.RowsAffected), dbRet.Error
 
 	if nil != err {
@@ -147,7 +148,7 @@ func (connector *mysqlConnector) Search(funcArr ...rdbSearchConfigFunc) (ret sea
 
 	var dbRet *gorm.DB
 
-	if  nil != action.objectArrType {
+	if nil != action.objectArrType {
 		objectReflectArr := reflect.MakeSlice(action.objectArrType, 0, 0).Interface()
 		dbRet = connector.db.Table(action.getSpaceName()).
 			Select(action.keyArr).Where(action.condition.WhereArr.toSQL()).
@@ -198,10 +199,12 @@ func GetMySQLConnector(option MySQLConnectOption) RDBConnector {
 	fileConnectorLock.Lock()
 	defer fileConnectorLock.Unlock()
 
+	// useAffectedRows 等配置提示无效，后续需要确认原因
 	extendParam := ""
 	connectStr := fmt.Sprintf("%s:%s@tcp(%s:%d)/?charset=utf8mb4%s",
 		option.User, option.Password, option.Host, option.Port, extendParam)
-	db, err := gorm.Open(mysql.Open(connectStr), &gorm.Config{})
+	// gorm 日志默认不打印
+	db, err := gorm.Open(mysql.Open(connectStr), &gorm.Config{Logger: logger.Discard})
 
 	// mysql 连接能成功创建，并执行 SQL, 才算是创建成功
 	if nil != err {
