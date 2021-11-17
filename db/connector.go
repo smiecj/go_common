@@ -12,6 +12,8 @@ type RDBConnector interface {
 	Update(...rdbUpdateConfigFunc) (updateRet, error)
 	Delete(...rdbDeleteConfigFunc) (updateRet, error)
 	Search(...rdbSearchConfigFunc) (searchRet, error)
+	Count(...rdbSearchConfigFunc) (searchRet, error)
+	Distinct(...rdbSearchConfigFunc) (searchRet, error)
 }
 
 // 更新类型动作结果
@@ -26,6 +28,11 @@ type searchRet struct {
 	Page      int
 	Len       int
 	Total     int
+}
+
+// searchRet: 添加字段和对应值
+func (searchRet *searchRet) addField(field field) {
+	searchRet.FieldArr = append(searchRet.FieldArr, field)
 }
 
 // 库表空间定义
@@ -60,6 +67,11 @@ func (field *field) AddMap(keyValueMap map[string]string) {
 	for key, value := range keyValueMap {
 		field.keyValueMap[key] = value
 	}
+}
+
+// 获取内部 map 对象
+func (field *field) GetMap() map[string]string {
+	return field.keyValueMap
 }
 
 // String

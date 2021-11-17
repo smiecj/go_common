@@ -55,13 +55,22 @@ func TestMySQLConnector(t *testing.T) {
 
 	// 查询
 	searchRet, err := connector.Search(SearchSetSpace(testMySQLDBName, testMySQLTableName),
-		SearchSetCondition("name", "=", "xiaoming"), SearchSetObjectArrType(testStudentSlice), SearchSetPageCondition(0, 10))
+		SearchSetObjectArrType(testStudentSlice), SearchSetPageCondition(0, 10))
 	require.Equal(t, nil, err)
 	require.LessOrEqual(t, 1, searchRet.Len)
 	studentArr := searchRet.ObjectArr.(studentSlice)
-	log.Info("[TestMySQLConnector] object arr len: %d", len(studentArr))
+	log.Info("[TestMySQLConnector] object arr len: %d, total: %d", len(studentArr), searchRet.Total)
 	for _, currentStudent := range studentArr {
 		log.Info("[TestMySQLConnector] current student: %v", currentStudent)
+	}
+
+	// distinct
+	searchRet, err = connector.Distinct(SearchSetSpace(testMySQLDBName, testMySQLTableName),
+		SearchSetKeyArr([]string{"name", "grade"}))
+	require.Equal(t, nil, err)
+	log.Info("[TestMySQLConnector] distinct len: %d", searchRet.Len)
+	for _, currentField := range searchRet.FieldArr {
+		log.Info("[TestMySQLConnector] Distinct name result: %s", currentField)
 	}
 
 	// 更新

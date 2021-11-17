@@ -3,6 +3,7 @@ package db
 import (
 	"fmt"
 	"reflect"
+	"strings"
 	"sync"
 
 	"github.com/smiecj/go_common/errorcode"
@@ -10,6 +11,11 @@ import (
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
+)
+
+const (
+	// distinct 用: 字段分隔符
+	distinctSeparator = ";;;"
 )
 
 var (
@@ -146,7 +152,16 @@ func (connector *mysqlConnector) Search(funcArr ...rdbSearchConfigFunc) (ret sea
 		currentFunc(action)
 	}
 
-	var dbRet *gorm.DB
+	// 统计 count
+	var count int64
+	dbRet := connector.db.Table(action.getSpaceName()).
+		Select(action.keyArr).Where(action.condition.WhereArr.toSQL()).Count(&count)
+	if nil != dbRet.Error {
+		log.Error("[mysqlConnector.Count] Count failed, table: %s, reason: %s", action.getSpaceName(), err.Error())
+		return ret, dbRet.Error
+	} else {
+		ret.Total = int(count)
+	}
 
 	if nil != action.objectArrType {
 		objectReflectArr := reflect.MakeSlice(action.objectArrType, 0, 0).Interface()
@@ -168,7 +183,7 @@ func (connector *mysqlConnector) Search(funcArr ...rdbSearchConfigFunc) (ret sea
 				valuestr := fmt.Sprintf("%v", value)
 				currentField.AddKeyValue(key, valuestr)
 			}
-			ret.FieldArr = append(ret.FieldArr, currentField)
+			ret.addField(currentField)
 		}
 	}
 
@@ -179,6 +194,75 @@ func (connector *mysqlConnector) Search(funcArr ...rdbSearchConfigFunc) (ret sea
 	} else {
 		log.Info("[mysqlConnector.Select] Select success: %s, search rows: %d", action.getSpaceName(), ret.Len)
 	}
+	return
+}
+
+// mysql: 统计数据量
+func (connector *mysqlConnector) Count(funcArr ...rdbSearchConfigFunc) (ret searchRet, err error) {
+	action := makeRDBSearchAction()
+	for _, currentFunc := range funcArr {
+		currentFunc(action)
+	}
+
+	var count int64
+	dbRet := connector.db.Table(action.getSpaceName()).Where(action.condition.WhereArr.toSQL()).Count(&count)
+
+	ret.Total, err = int(count), dbRet.Error
+
+	if nil != err {
+		log.Error("[mysqlConnector.Count] Count failed, table: %s, reason: %s", action.getSpaceName(), err.Error())
+	} else {
+		log.Info("[mysqlConnector.Count] Count success: %s, total: %d", action.getSpaceName(), ret.Total)
+	}
+	return
+}
+
+// mysql: distinct
+func (connector *mysqlConnector) Distinct(funcArr ...rdbSearchConfigFunc) (ret searchRet, err error) {
+	action := makeRDBSearchAction()
+	for _, currentFunc := range funcArr {
+		currentFunc(action)
+	}
+	// distinct 必须指定需要查询的列名
+	if len(action.keyArr) == 0 {
+		return ret, errorcode.BuildError(errorcode.DBParamInvalid, "[mysqlConnector.Distinct] distinct must set key array")
+	}
+
+	fieldValueArr := make([]string, 0)
+	// 查询包含多个字段，通过 SQL concat 关键字进行拼接
+	var distinctColumn string
+	if 1 == len(action.keyArr) {
+		distinctColumn = action.keyArr[0]
+	} else {
+		distinctColumn = "CONCAT("
+		for index := 0; index < len(action.keyArr); index++ {
+			if index != 0 {
+				distinctColumn += fmt.Sprintf(", '%s', ", distinctSeparator)
+			}
+			distinctColumn += fmt.Sprintf("%s", action.keyArr[index])
+		}
+		distinctColumn += ")"
+	}
+
+	dbRet := connector.db.Table(action.getSpaceName()).Select(action.keyArr).Where(action.condition.WhereArr.toSQL()).
+		Distinct().Pluck(distinctColumn, &fieldValueArr)
+	err = dbRet.Error
+	if nil != dbRet.Error {
+		log.Error("[mysqlConnector.Distinct] Distinct %s get field value failed: %s", action.getSpaceName(), err.Error())
+		return ret, err
+	}
+
+	// 多种取值组合最后会放到 多个 field 中
+	for _, currentValue := range fieldValueArr {
+		currentField := BuildNewField()
+		valueSplitArr := strings.Split(currentValue, distinctSeparator)
+		for index := 0; index < len(action.keyArr); index++ {
+			currentField.AddKeyValue(action.keyArr[index], valueSplitArr[index])
+		}
+		ret.addField(currentField)
+	}
+	// distinct 只计算 len，不计算 total
+	ret.Len = len(fieldValueArr)
 	return
 }
 

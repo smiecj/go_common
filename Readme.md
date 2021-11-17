@@ -1,7 +1,8 @@
 # go common
 
-提供 go 相关的公共库，其他业务仓库使用
-如：http 客户端、公共配置解析、公共数据库基类等
+提供 go 相关的公共库，供其他业务仓库使用，对一些常用的功能进行封装，方便使用
+
+如：http 客户端、公共配置解析、公共数据库连接类等
 
 # 已实现功能
 ## http 客户端
@@ -41,6 +42,8 @@ return errorcode.BuildError(errorcode.NetHandleFailed, "connect server failed")
 ```
 // 存入数据
 localConnector := GetLocalMemoryConnector()
+field := db.BuildNewField()
+field.AddKeyValue("key", "value")
 insertRet, err := localConnector.Insert(InsertSetSpace(dbName, tableName), InsertAddField(field))
 
 // 查询数据
@@ -51,8 +54,12 @@ searchRet, err := localConnector.Search(SearchSetSpace(dbName, tableName))
 ```
 // 存入数据
 localConnector := GetLocalFileConnector(file_store_folder)
+
 // insert field
+field := db.BuildNewField()
+field.AddKeyValue("key", "value")
 insertRet, err := localConnector.Insert(InsertSetSpace(dbName, tableName), InsertAddField(field))
+
 // insert object
 insertRet, err := localConnector.Insert(InsertSetSpace(dbName, tableName), InsertAddObject(obj))
 
@@ -79,9 +86,22 @@ updateRet, err := connector.Update(UpdateSetSpace("db_name", "table_name"),
 		UpdateAddObject(object{Name: "ToUpdateName"}), UpdateAddKeyArr([]string{"name"}))
 // 注意: gorm 默认会修改所有的字段，最好是通过 UpdateAddKeyArr 设置需要修改的字段列表
 
-// 查询数据
+// 查询数据 - select
 searchRet, err := connector.Search(SearchSetSpace("db_name", "table_name"),
     SearchSetCondition("ID", "=", "1"), SearchSetObjectArrType([]object{}), SearchSetPageCondition(0, 10))
+
+// 查询数据 - count
+searchRet, err := connector.Search(SearchSetSpace("db_name", "table_name"), SearchSetCondition("ID", "=", "1"))
+log.Info("count: %d", searchRet.Total)
+
+// 查询数据 - distinct
+searchRet, err := connector.Distinct(SearchSetSpace("db_name", "table_name"),
+    SearchSetCondition("ID", "=", "1"), SearchSetKeyArr([]string{"ID", "name"}))
+for _, currentField := range searchRet.FieldArr {
+	for columnName, value := range currentField.GetMap() {
+		log.Info("distinct result: %s -> %s", columnName, value)
+	}
+}
 
 // 删除数据
 deleteRet, err := connector.Delete(DeleteSetSpace("db_name", "table_name"),
@@ -92,3 +112,17 @@ deleteRet, err := connector.Delete(DeleteSetSpace("db_name", "table_name"),
 ## mysql 数据库连接器
 
 ## 自定义配置 yaml 文件解析
+### 获取 配置管理器
+```
+// 本地文件
+config := config.GetYamlConfigManager(config_file_name)
+```
+
+### 获取具体配置
+```
+value, err := config.get(space_name, key)
+
+// or get by space
+configSpace, err := config.getSpace(space_name)
+value := configSpace.get(key)
+```

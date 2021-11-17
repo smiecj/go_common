@@ -10,6 +10,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/smiecj/go_common/errorcode"
 	"github.com/smiecj/go_common/util/json"
 	"github.com/smiecj/go_common/util/log"
 )
@@ -121,7 +122,6 @@ func (connector *localFileConnector) Delete(funcArr ...rdbDeleteConfigFunc) (ret
 }
 
 // 查询数据
-// todo: implement
 func (connector *localFileConnector) Search(funcArr ...rdbSearchConfigFunc) (ret searchRet, err error) {
 	action := makeRDBSearchAction()
 	for _, currentFunc := range funcArr {
@@ -146,6 +146,8 @@ func (connector *localFileConnector) Search(funcArr ...rdbSearchConfigFunc) (ret
 			valueBytes, _, _ := reader.ReadLine()
 			if nil != readErr {
 				// read finish
+				// 文件读取现在没做 limit，所以 total = len
+				ret.Total = ret.Len
 				return
 			}
 
@@ -156,7 +158,7 @@ func (connector *localFileConnector) Search(funcArr ...rdbSearchConfigFunc) (ret
 			for index := 0; index < len(keyArr); index++ {
 				currentField.AddKeyValue(keyArr[index], valueArr[index])
 			}
-			ret.FieldArr = append(ret.FieldArr, currentField)
+			ret.addField(currentField)
 			ret.Len++
 		}
 	} else if string(firstLine) == fileFormatObject {
@@ -174,6 +176,7 @@ func (connector *localFileConnector) Search(funcArr ...rdbSearchConfigFunc) (ret
 			if nil != readErr {
 				// read finish
 				ret.ObjectArr = objectReflectArr.Interface()
+				ret.Total = ret.Len
 				return
 			}
 
@@ -190,6 +193,38 @@ func (connector *localFileConnector) Search(funcArr ...rdbSearchConfigFunc) (ret
 	} else {
 		return ret, fmt.Errorf("File format is not valid")
 	}
+}
+
+// 统计数据量
+func (connector *localFileConnector) Count(funcArr ...rdbSearchConfigFunc) (ret searchRet, err error) {
+	// 注意: 文件统计 暂时不支持按指定条件过滤，直接统计所有行数
+	action := makeRDBSearchAction()
+	for _, currentFunc := range funcArr {
+		currentFunc(action)
+	}
+
+	fileAbsolutePath := connector.getFileAbsolutePath(action.getSpaceName())
+	// 文件不存在，直接返回 （总数为0）
+	if _, err = os.Stat(fileAbsolutePath); errors.Is(err, os.ErrNotExist) {
+		return ret, nil
+	}
+
+	file, _ := os.Open(fileAbsolutePath)
+	defer file.Close()
+
+	reader := bufio.NewReader(file)
+	for _, _, readErr := reader.ReadLine(); nil != readErr; {
+		ret.Total++
+	}
+	// 去掉开头 表示文件格式的那一行
+	ret.Total--
+	return
+}
+
+// distinct
+// file connector 暂不需要实现
+func (connector *localFileConnector) Distinct(funcArr ...rdbSearchConfigFunc) (ret searchRet, err error) {
+	return ret, errorcode.BuildError(errorcode.NotImplement, "[localFileConnector.Distinct] not implement")
 }
 
 // 公共方法: 获取需要操作的文件的绝对路径

@@ -1,6 +1,10 @@
 package db
 
-import "sync"
+import (
+	"sync"
+
+	"github.com/smiecj/go_common/errorcode"
+)
 
 var (
 	localMemoryConnectorSingleton RDBConnector
@@ -89,12 +93,32 @@ func (connector *localMemoryConnector) Search(funcArr ...rdbSearchConfigFunc) (s
 	if nil == connector.storage[spaceName] {
 		return searchRet{Len: 0}, nil
 	} else {
-		currentField := field{keyValueMap: map[string]string{}}
+		currentField := BuildNewField()
 		for key, value := range connector.storage[spaceName] {
-			currentField.keyValueMap[key] = value
+			currentField.AddKeyValue(key, value)
 		}
 		return searchRet{Len: 1, FieldArr: []field{currentField}}, nil
 	}
+}
+
+// 本地内存: 统计数据量
+func (connector *localMemoryConnector) Count(funcArr ...rdbSearchConfigFunc) (searchRet, error) {
+	action := makeRDBSearchAction()
+	for _, currentFunc := range funcArr {
+		currentFunc(action)
+	}
+
+	spaceName := action.getSpaceName()
+	if nil == connector.storage[spaceName] {
+		return searchRet{Total: 0}, nil
+	} else {
+		return searchRet{Total: 1}, nil
+	}
+}
+
+// 本地内存: 暂不需要实现 Distinct
+func (connector *localMemoryConnector) Distinct(funcArr ...rdbSearchConfigFunc) (ret searchRet, err error) {
+	return ret, errorcode.BuildError(errorcode.NotImplement, "[localMemoryConnector.Distinct] not implement")
 }
 
 // 实现本地内存连接器

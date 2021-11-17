@@ -8,10 +8,19 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+type LogLevel int
+
 // 自定义formatter, 参考: https://cloud.tencent.com/developer/article/1830707
 // 使用方式: log.Info("[method name] log msg: %s", msg)
 const (
 	timeFormat = "2006-01-02 15:04:05"
+)
+
+const (
+	LevelDebug LogLevel = iota
+	LevelInfo
+	LevelWarn
+	LevelError
 )
 
 type MyFormatter struct {
@@ -35,7 +44,22 @@ func (m *MyFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 
 func init() {
 	log.SetFormatter(&MyFormatter{})
-	// some other formatter: &log.JSONFormatter{}
+	log.SetLevel(log.InfoLevel)
+}
+
+func SetLevel(level LogLevel) {
+	logLevel := log.InfoLevel
+	switch level {
+	case LevelDebug:
+		logLevel = log.DebugLevel
+	case LevelInfo:
+		logLevel = log.InfoLevel
+	case LevelWarn:
+		logLevel = log.WarnLevel
+	case LevelError:
+		logLevel = log.ErrorLevel
+	}
+	log.SetLevel(logLevel)
 }
 
 func Debug(format string, args ...interface{}) {
