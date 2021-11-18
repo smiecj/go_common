@@ -224,7 +224,7 @@ func (connector *localFileConnector) Count(funcArr ...rdbSearchConfigFunc) (ret 
 // distinct
 // file connector 暂不需要实现
 func (connector *localFileConnector) Distinct(funcArr ...rdbSearchConfigFunc) (ret searchRet, err error) {
-	return ret, errorcode.BuildError(errorcode.NotImplement, "[localFileConnector.Distinct] not implement")
+	return ret, errorcode.BuildErrorWithMsg(errorcode.NotImplement, "[localFileConnector.Distinct] not implement")
 }
 
 // 公共方法: 获取需要操作的文件的绝对路径
@@ -257,7 +257,6 @@ func GetLocalFileConnector(folderPath string) RDBConnector {
 	defer fileConnectorLock.Unlock()
 
 	// 目录能成功创建，才能正常创建 connector
-	// todo: 判断操作的路径，不允许直接操作系统路径
 	err := os.MkdirAll(folderPath, os.ModeDir)
 	if nil != err {
 		log.Error("[GetLocalFileConnector] Get local connector failed, folder create failed: %s", folderPath)

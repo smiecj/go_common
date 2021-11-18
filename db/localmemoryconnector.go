@@ -118,7 +118,7 @@ func (connector *localMemoryConnector) Count(funcArr ...rdbSearchConfigFunc) (se
 
 // 本地内存: 暂不需要实现 Distinct
 func (connector *localMemoryConnector) Distinct(funcArr ...rdbSearchConfigFunc) (ret searchRet, err error) {
-	return ret, errorcode.BuildError(errorcode.NotImplement, "[localMemoryConnector.Distinct] not implement")
+	return ret, errorcode.BuildErrorWithMsg(errorcode.NotImplement, "[localMemoryConnector.Distinct] not implement")
 }
 
 // 实现本地内存连接器

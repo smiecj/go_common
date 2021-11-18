@@ -34,7 +34,7 @@ import log "github.com/smiecj/go_common/errorcode"
 return errorcode.ServiceError
 
 // 返回自定义错误
-return errorcode.BuildError(errorcode.NetHandleFailed, "connect server failed")
+return errorcode.BuildErrorWithMsg(errorcode.NetHandleFailed, "connect server failed")
 ```
 
 ## RDB
@@ -74,6 +74,8 @@ searchRet, err := localConnector.Search(SearchSetSpace(dbName, tableName), Searc
 
 ### mysql (gorm)
 ```
+connector := GetMySQLConnector(MySQLConnectOption{Host: host, Port: port, User: user, Password: password})
+
 // 存入数据
 insertRet, err := connector.Insert(InsertSetSpace("db_name", "table_name"), 
     InsertAddObjectArr([]objectArr{obj1, obj2}), InsertSetObjectArrType([]object{}))
@@ -89,6 +91,10 @@ updateRet, err := connector.Update(UpdateSetSpace("db_name", "table_name"),
 // 查询数据 - select
 searchRet, err := connector.Search(SearchSetSpace("db_name", "table_name"),
     SearchSetCondition("ID", "=", "1"), SearchSetObjectArrType([]object{}), SearchSetPageCondition(0, 10))
+objectArr := searchRet.ObjectArr.([]object{})
+for _, currentObject := range objectArr {
+	log.Info("current object: %v", currentObject)
+}
 
 // 查询数据 - count
 searchRet, err := connector.Search(SearchSetSpace("db_name", "table_name"), SearchSetCondition("ID", "=", "1"))
@@ -114,8 +120,8 @@ deleteRet, err := connector.Delete(DeleteSetSpace("db_name", "table_name"),
 ## 自定义配置 yaml 文件解析
 ### 获取 配置管理器
 ```
-// 本地文件
-config := config.GetYamlConfigManager(config_file_name)
+// 本地yaml配置文件
+config := config.GetYamlConfig(config_file_name)
 ```
 
 ### 获取具体配置
@@ -125,4 +131,12 @@ value, err := config.get(space_name, key)
 // or get by space
 configSpace, err := config.getSpace(space_name)
 value := configSpace.get(key)
+
+// or transform to object
+type dbConfig struct {
+	Host string `json:"host"`
+	...
+}
+configSpace.Unmarshal(&dbConfig)
+log.Info(dbConfig.Host)
 ```

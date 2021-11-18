@@ -73,7 +73,7 @@ func (connector *mysqlConnector) Insert(funcArr ...rdbInsertConfigFunc) (ret upd
 		}
 		dbRet = connector.db.Table(action.getSpaceName()).Select(searchKeyArr).Create(toInsertArr)
 	} else {
-		return ret, errorcode.BuildError(errorcode.DBParamInvalid, "Insert failed: to insert data is empty")
+		return ret, errorcode.BuildErrorWithMsg(errorcode.DBParamInvalid, "Insert failed: to insert data is empty")
 	}
 
 	ret.AffectedRows, err = int(dbRet.RowsAffected), dbRet.Error
@@ -109,7 +109,7 @@ func (connector *mysqlConnector) Update(funcArr ...rdbUpdateConfigFunc) (ret upd
 		}
 		dbRet = connector.db.Table(action.getSpaceName()).Where(action.condition.WhereArr.toSQL()).Select(searchKeyArr).Updates(action.objectArr[0])
 	} else {
-		return ret, errorcode.BuildError(errorcode.DBParamInvalid, "Insert failed: to insert data is empty")
+		return ret, errorcode.BuildErrorWithMsg(errorcode.DBParamInvalid, "Insert failed: to insert data is empty")
 	}
 
 	ret.AffectedRows, err = int(dbRet.RowsAffected), dbRet.Error
@@ -225,7 +225,7 @@ func (connector *mysqlConnector) Distinct(funcArr ...rdbSearchConfigFunc) (ret s
 	}
 	// distinct 必须指定需要查询的列名
 	if len(action.keyArr) == 0 {
-		return ret, errorcode.BuildError(errorcode.DBParamInvalid, "[mysqlConnector.Distinct] distinct must set key array")
+		return ret, errorcode.BuildErrorWithMsg(errorcode.DBParamInvalid, "[mysqlConnector.Distinct] distinct must set key array")
 	}
 
 	fieldValueArr := make([]string, 0)
