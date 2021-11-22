@@ -24,12 +24,12 @@ type yamlManager struct {
 
 // yaml config space
 type yamlSpace struct {
-	configMap map[string]string
+	configMap map[string]interface{}
 	mapLock   sync.RWMutex
 }
 
 // yaml space get config
-func (space *yamlSpace) Get(key string) (string, error) {
+func (space *yamlSpace) Get(key string) (interface{}, error) {
 	space.mapLock.RLock()
 	defer space.mapLock.RUnlock()
 
@@ -41,7 +41,7 @@ func (space *yamlSpace) Get(key string) (string, error) {
 }
 
 // yaml space set config
-func (space *yamlSpace) Set(key, value string) error {
+func (space *yamlSpace) Set(key string, value interface{}) error {
 	space.mapLock.Lock()
 	defer space.mapLock.Unlock()
 
@@ -71,7 +71,7 @@ func (config *yamlManager) init() (err error) {
 		return
 	}
 
-	fullConfigMap := make(map[string]map[string]string)
+	fullConfigMap := make(map[string]map[string]interface{})
 	err = yaml.Unmarshal(fileContentBytes, &fullConfigMap)
 	if nil != err {
 		return
@@ -87,7 +87,7 @@ func (config *yamlManager) init() (err error) {
 }
 
 // yaml config manager get config
-func (config *yamlManager) Get(spaceName, key string) (ret string, err error) {
+func (config *yamlManager) Get(spaceName, key string) (ret interface{}, err error) {
 	space, err := config.getSpace(spaceName)
 	if nil != err {
 		return "", err
@@ -105,7 +105,7 @@ func (config *yamlManager) GetSpace(spaceName string) (space space, err error) {
 }
 
 // yaml config set config
-func (config *yamlManager) Set(spaceName, key, value string) (err error) {
+func (config *yamlManager) Set(spaceName, key string, value interface{}) (err error) {
 	space, err := config.getSpace(spaceName)
 	if nil != err {
 		return err
