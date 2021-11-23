@@ -11,7 +11,6 @@
 import "github.com/smiecj/go_common/http"
 client := GetHTTPClient()
 client.Do(Get(), Url("http://..."))
-contentBytes := client.DoGetRequest(url, nil)
 ```
 
 ## file writer
@@ -35,6 +34,8 @@ return errorcode.ServiceError
 
 // 返回自定义错误
 return errorcode.BuildErrorWithMsg(errorcode.NetHandleFailed, "connect server failed")
+// or: msg same as code
+return errorcode.BuildError(errorcode.NetHandleFailed)
 ```
 
 ## RDB
@@ -114,9 +115,6 @@ deleteRet, err := connector.Delete(DeleteSetSpace("db_name", "table_name"),
 		DeleteSetCondition("ID", "=", "1"))
 ```
 
-# 待实现功能
-## mysql 数据库连接器
-
 ## 自定义配置 yaml 文件解析
 ### 获取 配置管理器
 ```
@@ -126,6 +124,7 @@ config := config.GetYamlConfig(config_file_name)
 
 ### 获取具体配置
 ```
+// get config value by space name and key
 value, err := config.get(space_name, key)
 
 // or get by space
@@ -135,8 +134,20 @@ value := configSpace.get(key)
 // or transform to object
 type dbConfig struct {
 	Host string `json:"host"`
-	...
+	Port int    `json:"port"`
 }
 configSpace.Unmarshal(&dbConfig)
 log.Info(dbConfig.Host)
 ```
+
+## mail sender
+```
+sender := NewQQMailSender(MailSenderConf{
+		Token:  "qq mail token",
+		Sender: "sender qq mail account",
+	})
+err := sender.Send(AddReceiver("receiver mail account"), SetTitle("test_title"), SetContent("test_content"), SetNickName("nickname"))
+```
+
+# 待实现功能
+## RPC 框架
