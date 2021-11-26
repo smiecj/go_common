@@ -163,10 +163,16 @@ func (connector *mysqlConnector) Search(funcArr ...rdbSearchConfigFunc) (ret sea
 		ret.Total = int(count)
 	}
 
+	// order condition
+	var orderStr string
+	if "" != action.condition.Order.Field {
+		orderStr = fmt.Sprintf("%s %s", action.condition.Order.Field, action.condition.Order.Sc)
+	}
+
 	if nil != action.objectArrType {
 		objectReflectArr := reflect.MakeSlice(action.objectArrType, 0, 0).Interface()
 		dbRet = connector.db.Table(action.getSpaceName()).
-			Select(action.keyArr).Where(action.condition.WhereArr.toSQL()).
+			Select(action.keyArr).Where(action.condition.WhereArr.toSQL()).Order(orderStr).
 			Offset(action.condition.Page.No * action.condition.Page.Limit).Limit(action.condition.Page.Limit).
 			Find(&objectReflectArr)
 		ret.ObjectArr = objectReflectArr
@@ -174,7 +180,7 @@ func (connector *mysqlConnector) Search(funcArr ...rdbSearchConfigFunc) (ret sea
 		// 非导入到 object 情况，存在 value 在转换的时候不准确的问题，需要测试
 		keyValueMapArr := make([]map[string]interface{}, 0)
 		dbRet = connector.db.Table(action.getSpaceName()).
-			Select(action.keyArr).Where(action.condition.WhereArr.toSQL()).
+			Select(action.keyArr).Where(action.condition.WhereArr.toSQL()).Order(orderStr).
 			Offset(action.condition.Page.No * action.condition.Page.Limit).Limit(action.condition.Page.Limit).
 			Find(&keyValueMapArr)
 		for _, currentKeyValueMap := range keyValueMapArr {

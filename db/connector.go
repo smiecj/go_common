@@ -330,10 +330,31 @@ func SearchSetCondition(args ...string) func(*rdbSearchAction) {
 	}
 }
 
+// 设置 limit 条件
+func SearchSetLimit(limit int) func(*rdbSearchAction) {
+	return func(action *rdbSearchAction) {
+		action.condition.Page.Limit = limit
+	}
+}
+
 // 设置分页条件
 func SearchSetPageCondition(start, limit int) func(*rdbSearchAction) {
 	return func(action *rdbSearchAction) {
 		action.condition.Page.No, action.condition.Page.Limit = start/limit, limit
+	}
+}
+
+// 设置排序条件 (仅排序字段 默认 asc)
+func SearchSetOrderField(field string) func(*rdbSearchAction) {
+	return func(action *rdbSearchAction) {
+		action.condition.Order.Field = field
+	}
+}
+
+// 设置排序条件（排序字段 + 排序顺序，asc or desc）
+func SearchSetOrderFieldAndAsc(field, asc string) func(*rdbSearchAction) {
+	return func(action *rdbSearchAction) {
+		action.condition.Order.Field, action.condition.Order.Sc = field, asc
 	}
 }
 
