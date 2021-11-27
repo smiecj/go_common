@@ -14,18 +14,24 @@ const (
 	conditionTypeOr     conditionType = "or"
 	conditionTypeAnd    conditionType = "and"
 
-	conditionMethodLike  conditionMethod = "like"
-	conditionMethodEqual conditionMethod = "equal"
+	conditionMethodLike    conditionMethod = "like"
+	conditionMethodEqual   conditionMethod = "equal"
+	conditionMethodSmaller conditionMethod = "<"
+	conditionMethodBigger  conditionMethod = ">"
 )
 
 var (
 	methodToKeywordMap = map[string]string{
-		string(conditionMethodLike):  "%",
-		string(conditionMethodEqual): "=",
+		string(conditionMethodLike):    "%",
+		string(conditionMethodEqual):   "=",
+		string(conditionMethodSmaller): "<",
+		string(conditionMethodBigger):  ">",
 	}
 	keyWordToMethodMap = map[string]conditionMethod{
 		"%": conditionMethodLike,
 		"=": conditionMethodEqual,
+		"<": conditionMethodSmaller,
+		">": conditionMethodBigger,
 	}
 )
 
@@ -76,7 +82,7 @@ func buildWhereConditionArr(args ...string) whereArr {
 			if methodToKeywordMap[args[index+1]] == "" {
 				conditionMethod = keyWordToMethodMap[args[index+1]]
 			}
-			
+
 			currentCondition.Key, currentCondition.Method, currentCondition.Value =
 				currentArg, conditionMethod, args[index+2]
 			currentCondition.Type = conditionTypeAssert

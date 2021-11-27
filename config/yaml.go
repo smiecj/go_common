@@ -6,9 +6,9 @@ import (
 	"sync"
 
 	"github.com/smiecj/go_common/errorcode"
-	"github.com/smiecj/go_common/util/json"
 	"github.com/smiecj/go_common/util/log"
-	"gopkg.in/yaml.v2"
+
+	"gopkg.in/yaml.v3"
 )
 
 var (
@@ -54,8 +54,8 @@ func (space *yamlSpace) Unmarshal(obj interface{}) error {
 	space.mapLock.RLock()
 	defer space.mapLock.RUnlock()
 
-	configContent, _ := json.Marshal(space.configMap)
-	return json.Unmarshal(configContent, obj)
+	configContent, _ := yaml.Marshal(space.configMap)
+	return yaml.Unmarshal(configContent, obj)
 }
 
 // yaml config init

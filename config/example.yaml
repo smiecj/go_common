@@ -5,6 +5,8 @@
 db:
   mysql_host: localhost
   mysql_port: 3306
+  db_arr:
+    - school
 log:
   level: debug
 http:

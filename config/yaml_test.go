@@ -12,14 +12,16 @@ const (
 	testSpaceDB        = "db"
 	testKeyMySQLHost   = "mysql_host"
 	testKeyMySQLPort   = "mysql_port"
+	testKeyMySQLDBArr  = "db_arr"
 	testValueMySQLHost = "localhost"
 	testValueMySQLPort = 3306
 	testConfigPath     = "/tmp"
 )
 
 type dbConfig struct {
-	MysqlHost string `json:"mysql_host"`
-	MysqlPort int    `json:"mysql_port"`
+	MysqlHost string   `yaml:"mysql_host"`
+	MysqlPort int      `yaml:"mysql_port"`
+	DBArr     []string `yaml:"db_arr"`
 }
 
 func TestYamlConfig(t *testing.T) {
@@ -39,6 +41,8 @@ func TestYamlConfig(t *testing.T) {
 	dbConfigObj := dbConfig{}
 	_ = config.Unmarshal(testSpaceDB, &dbConfigObj)
 	require.Equal(t, testValueMySQLHost, dbConfigObj.MysqlHost)
+	require.Equal(t, 1, len(dbConfigObj.DBArr))
+	require.NotEqual(t, "", dbConfigObj.DBArr[0])
 
 	// get space & set config
 	space, err := config.GetSpace(testSpaceDB)

@@ -9,6 +9,7 @@ import (
 
 const (
 	normalFormat = "2006-01-02 15:04:05"
+	dateFormat   = "2006-01-02"
 )
 
 // 获取当前时间戳
@@ -24,6 +25,23 @@ func CompareTimestampWithNow(timestamp string) (dur time.Duration, err error) {
 		err = errorcode.BuildErrorWithMsg(errorcode.ParseTimeFailed, err.Error())
 	} else {
 		dur = time.Now().Sub(inputTime)
+	}
+	return
+}
+
+// 获取当前时间 指定偏移时间后的时间戳
+func GetCurrentTimeAfterDuration(dur time.Duration) string {
+	return time.Now().Add(dur).Format(normalFormat)
+}
+
+// 获取指定时间戳、指定偏移时间后的时间戳
+func GetTimestampAfterDuration(startTimestamp string, dur time.Duration) (targetTimestamp string, err error) {
+	startTime, err := time.Parse(normalFormat, startTimestamp)
+	if nil != err {
+		err = errorcode.BuildErrorWithMsg(errorcode.ParseTimeFailed, err.Error())
+	} else {
+		targetTime := startTime.Add(dur)
+		targetTimestamp = targetTime.Format(normalFormat)
 	}
 	return
 }

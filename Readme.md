@@ -133,8 +133,8 @@ value := configSpace.get(key)
 
 // or transform to object
 type dbConfig struct {
-	Host string `json:"host"`
-	Port int    `json:"port"`
+	Host string `yaml:"host"`
+	Port int    `yaml:"port"`
 }
 configSpace.Unmarshal(&dbConfig)
 log.Info(dbConfig.Host)
