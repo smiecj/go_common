@@ -2,6 +2,7 @@
 package time
 
 import (
+	"strconv"
 	"time"
 
 	"github.com/smiecj/go_common/errorcode"
@@ -43,5 +44,16 @@ func GetTimestampAfterDuration(startTimestamp string, dur time.Duration) (target
 		targetTime := startTime.Add(dur)
 		targetTimestamp = targetTime.Format(normalFormat)
 	}
+	return
+}
+
+// unix 时间戳（秒）格式转 normal 格式
+func GetTimestampByUnixtime(unixtime string) (targetTimestamp string, err error) {
+	unixtimeInt, err := strconv.Atoi(unixtime)
+	if nil != err {
+		err = errorcode.BuildErrorWithMsg(errorcode.ParseTimeFailed, err.Error())
+	}
+	targetTime := time.Unix(int64(unixtimeInt), 0)
+	targetTimestamp = targetTime.Format(normalFormat)
 	return
 }
