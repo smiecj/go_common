@@ -10,6 +10,7 @@ import (
 	"strings"
 	"sync"
 
+	. "github.com/smiecj/go_common/db"
 	"github.com/smiecj/go_common/errorcode"
 	"github.com/smiecj/go_common/util/json"
 	"github.com/smiecj/go_common/util/log"
@@ -46,13 +47,13 @@ value1 --- value2 --- value3 (object1)
 key1 --- key2 --- key3
 value1 --- value2 --- value3 (object2)
 */
-func (connector *localFileConnector) Insert(funcArr ...rdbInsertConfigFunc) (ret updateRet, err error) {
-	action := makeRDBInsertAction()
+func (connector *localFileConnector) Insert(funcArr ...RDBInsertConfigFunc) (ret UpdateRet, err error) {
+	action := MakeRDBInsertAction()
 	for _, currentFunc := range funcArr {
 		currentFunc(action)
 	}
 
-	fileAbsolutePath := connector.getFileAbsolutePath(action.getSpaceName())
+	fileAbsolutePath := connector.getFileAbsolutePath(action.GetSpaceName())
 	file, err := os.OpenFile(fileAbsolutePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
 	if nil != err {
 		log.Error("[localFileConnector.Insert] write file failed, file name: %s, err: %s", fileAbsolutePath, err.Error())
@@ -60,13 +61,15 @@ func (connector *localFileConnector) Insert(funcArr ...rdbInsertConfigFunc) (ret
 	}
 	defer file.Close()
 
+	fieldArr := action.GetFieldArr()
+	objectArr := action.GetObjectArr()
 	switch {
-	case 0 != len(action.fieldArr):
+	case 0 != len(fieldArr):
 		file.WriteString(fileFormatKeyValue + lineSeparator)
-		for _, currentField := range action.fieldArr {
+		for _, currentField := range fieldArr {
 			keyStrAppender := new(bytes.Buffer)
 			valueStrAppender := new(bytes.Buffer)
-			for key, value := range currentField.keyValueMap {
+			for key, value := range currentField.GetMap() {
 				if keyStrAppender.Len() != 0 {
 					keyStrAppender.WriteString(keyValueSplitor)
 					valueStrAppender.WriteString(keyValueSplitor)
@@ -82,15 +85,15 @@ func (connector *localFileConnector) Insert(funcArr ...rdbInsertConfigFunc) (ret
 			file.WriteString(lineSeparator)
 		}
 
-		ret.AffectedRows = len(action.fieldArr)
-	case 0 != len(action.objectArr):
+		ret.AffectedRows = len(fieldArr)
+	case 0 != len(objectArr):
 		file.WriteString(fileFormatObject + lineSeparator)
-		for _, currentObject := range action.objectArr {
+		for _, currentObject := range objectArr {
 			objectBytes, _ := json.Marshal(currentObject)
 			file.Write(objectBytes)
 			file.WriteString(lineSeparator)
 		}
-		ret.AffectedRows = len(action.objectArr)
+		ret.AffectedRows = len(objectArr)
 	}
 
 	log.Info("[localFileConnector.Insert] Write file success, rows: %d", ret.AffectedRows)
@@ -99,20 +102,20 @@ func (connector *localFileConnector) Insert(funcArr ...rdbInsertConfigFunc) (ret
 
 // 更新数据
 // 文件不支持更新，只能覆盖
-func (connector *localFileConnector) Update(funcArr ...rdbUpdateConfigFunc) (ret updateRet, err error) {
+func (connector *localFileConnector) Update(funcArr ...RDBUpdateConfigFunc) (ret UpdateRet, err error) {
 	err = fmt.Errorf("File storage not support update")
 	return
 }
 
 // 删除数据
 // 将会直接删除整个文件
-func (connector *localFileConnector) Delete(funcArr ...rdbDeleteConfigFunc) (ret updateRet, err error) {
-	action := makeRDBDeleteAction()
+func (connector *localFileConnector) Delete(funcArr ...RDBDeleteConfigFunc) (ret UpdateRet, err error) {
+	action := MakeRDBDeleteAction()
 	for _, currentFunc := range funcArr {
 		currentFunc(action)
 	}
 
-	fileAbsolutePath := connector.getFileAbsolutePath(action.getSpaceName())
+	fileAbsolutePath := connector.getFileAbsolutePath(action.GetSpaceName())
 	err = os.Remove(fileAbsolutePath)
 	if nil != err {
 		log.Error("[localFileConnector.Deletel] delete file failed, file name: %s, err: %s", fileAbsolutePath, err.Error())
@@ -122,13 +125,13 @@ func (connector *localFileConnector) Delete(funcArr ...rdbDeleteConfigFunc) (ret
 }
 
 // 查询数据
-func (connector *localFileConnector) Search(funcArr ...rdbSearchConfigFunc) (ret searchRet, err error) {
-	action := makeRDBSearchAction()
+func (connector *localFileConnector) Search(funcArr ...RDBSearchConfigFunc) (ret SearchRet, err error) {
+	action := MakeRDBSearchAction()
 	for _, currentFunc := range funcArr {
 		currentFunc(action)
 	}
 
-	fileAbsolutePath := connector.getFileAbsolutePath(action.getSpaceName())
+	fileAbsolutePath := connector.getFileAbsolutePath(action.GetSpaceName())
 	// 文件不存在，返回失败结果
 	if _, err := os.Stat(fileAbsolutePath); errors.Is(err, os.ErrNotExist) {
 		return ret, fmt.Errorf("File is not exists")
@@ -140,7 +143,6 @@ func (connector *localFileConnector) Search(funcArr ...rdbSearchConfigFunc) (ret
 	reader := bufio.NewReader(file)
 	firstLine, _, _ := reader.ReadLine()
 	if string(firstLine) == fileFormatKeyValue {
-		ret.FieldArr = make([]field, 0)
 		for {
 			keyBytes, _, readErr := reader.ReadLine()
 			valueBytes, _, _ := reader.ReadLine()
@@ -158,17 +160,18 @@ func (connector *localFileConnector) Search(funcArr ...rdbSearchConfigFunc) (ret
 			for index := 0; index < len(keyArr); index++ {
 				currentField.AddKeyValue(keyArr[index], valueArr[index])
 			}
-			ret.addField(currentField)
+			ret.AddField(currentField)
 			ret.Len++
 		}
 	} else if string(firstLine) == fileFormatObject {
 		// 查询条件中 对象为空 或者是 结果数组类型为空，则直接返回错误信息
-		if nil == action.object || nil == action.objectArrType {
+		object, objectArrType := action.GetObject(), action.GetObjectArrType()
+		if nil == object || nil == objectArrType {
 			return ret, fmt.Errorf("Search base object is empty, please use 'SearchSetObject' to set object struct")
 		}
 		// reflect
-		objValue := reflect.New(reflect.TypeOf(action.object))
-		objectReflectArr := reflect.MakeSlice(action.objectArrType, 0, 0)
+		objValue := reflect.New(reflect.TypeOf(object))
+		objectReflectArr := reflect.MakeSlice(objectArrType, 0, 0)
 		ret.ObjectArr = make([]interface{}, 0)
 
 		for {
@@ -196,14 +199,14 @@ func (connector *localFileConnector) Search(funcArr ...rdbSearchConfigFunc) (ret
 }
 
 // 统计数据量
-func (connector *localFileConnector) Count(funcArr ...rdbSearchConfigFunc) (ret searchRet, err error) {
+func (connector *localFileConnector) Count(funcArr ...RDBSearchConfigFunc) (ret SearchRet, err error) {
 	// 注意: 文件统计 暂时不支持按指定条件过滤，直接统计所有行数
-	action := makeRDBSearchAction()
+	action := MakeRDBSearchAction()
 	for _, currentFunc := range funcArr {
 		currentFunc(action)
 	}
 
-	fileAbsolutePath := connector.getFileAbsolutePath(action.getSpaceName())
+	fileAbsolutePath := connector.getFileAbsolutePath(action.GetSpaceName())
 	// 文件不存在，直接返回 （总数为0）
 	if _, err = os.Stat(fileAbsolutePath); errors.Is(err, os.ErrNotExist) {
 		return ret, nil
@@ -223,7 +226,7 @@ func (connector *localFileConnector) Count(funcArr ...rdbSearchConfigFunc) (ret 
 
 // distinct
 // file connector 暂不需要实现
-func (connector *localFileConnector) Distinct(funcArr ...rdbSearchConfigFunc) (ret searchRet, err error) {
+func (connector *localFileConnector) Distinct(funcArr ...RDBSearchConfigFunc) (ret SearchRet, err error) {
 	return ret, errorcode.BuildErrorWithMsg(errorcode.NotImplement, "[localFileConnector.Distinct] not implement")
 }
 

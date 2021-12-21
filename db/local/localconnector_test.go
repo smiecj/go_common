@@ -3,6 +3,7 @@ package db
 import (
 	"testing"
 
+	. "github.com/smiecj/go_common/db"
 	"github.com/smiecj/go_common/util/log"
 	"github.com/stretchr/testify/require"
 )
@@ -29,10 +30,10 @@ func TestLocalMemoryConnector(t *testing.T) {
 	localConnector := GetLocalMemoryConnector()
 	field := BuildNewField()
 	field.AddMap(testKeyValueMap)
-	updateRet, _ := localConnector.Insert(InsertSetSpace(testDBName, testTableName), InsertAddField(field))
-	log.Info("[TestLocalConnector] update affected rows: %d", updateRet.AffectedRows)
-	searchRet, _ := localConnector.Search(SearchSetSpace(testDBName, testTableName))
-	log.Info("[TestLocalConnector] search rows: %d", searchRet.Len)
+	UpdateRet, _ := localConnector.Insert(InsertSetSpace(testDBName, testTableName), InsertAddField(field))
+	log.Info("[TestLocalConnector] update affected rows: %d", UpdateRet.AffectedRows)
+	SearchRet, _ := localConnector.Search(SearchSetSpace(testDBName, testTableName))
+	log.Info("[TestLocalConnector] search rows: %d", SearchRet.Len)
 }
 
 func TestLocalFileConnector(t *testing.T) {
@@ -45,10 +46,10 @@ func TestLocalFileConnector(t *testing.T) {
 	require.Equal(t, nil, err)
 	require.Less(t, 0, insertRet.AffectedRows)
 
-	searchRet, err := localConnector.Search(SearchSetSpace(testDBName, testTableName))
+	SearchRet, err := localConnector.Search(SearchSetSpace(testDBName, testTableName))
 	require.Equal(t, nil, err)
-	require.Less(t, 0, searchRet.Len)
-	for index, currentField := range searchRet.FieldArr {
+	require.Less(t, 0, SearchRet.Len)
+	for index, currentField := range SearchRet.FieldArr {
 		log.Info("[TestLocalFileConnector] search ret: index: %d, field: %s", index, currentField)
 	}
 
@@ -57,11 +58,11 @@ func TestLocalFileConnector(t *testing.T) {
 	require.Equal(t, nil, err)
 	require.Less(t, 0, insertRet.AffectedRows)
 
-	searchRet, err = localConnector.Search(SearchSetSpace(testDBName, testTableName),
+	SearchRet, err = localConnector.Search(SearchSetSpace(testDBName, testTableName),
 		SearchSetObject(testStruct{}), SearchSetObjectArrType([]*testStruct{}))
 	require.Equal(t, nil, err)
-	require.Less(t, 0, searchRet.Len)
-	testStructArr := searchRet.ObjectArr.([]*testStruct)
+	require.Less(t, 0, SearchRet.Len)
+	testStructArr := SearchRet.ObjectArr.([]*testStruct)
 	for index, currentStruct := range testStructArr {
 		log.Info("[TestLocalFileConnector] search ret: index: %d, object: %s", index, currentStruct)
 	}

@@ -49,7 +49,7 @@ type whereCondition struct {
 type whereArr []whereCondition
 
 // where 组合条件 转换成 SQL 查询语句
-func (arr whereArr) toSQL() string {
+func (arr whereArr) ToSQL() string {
 	buffer := new(bytes.Buffer)
 	for _, currentCond := range arr {
 		switch currentCond.Type {

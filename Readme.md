@@ -48,7 +48,7 @@ field.AddKeyValue("key", "value")
 insertRet, err := localConnector.Insert(InsertSetSpace(dbName, tableName), InsertAddField(field))
 
 // 查询数据
-searchRet, err := localConnector.Search(SearchSetSpace(dbName, tableName))
+SearchRet, err := localConnector.Search(SearchSetSpace(dbName, tableName))
 ```
 
 ### 文件
@@ -67,9 +67,9 @@ insertRet, err := localConnector.Insert(InsertSetSpace(dbName, tableName), Inser
 
 // 查询数据
 // search field
-searchRet, err := localConnector.Search(SearchSetSpace(dbName, tableName))
+SearchRet, err := localConnector.Search(SearchSetSpace(dbName, tableName))
 // search object
-searchRet, err := localConnector.Search(SearchSetSpace(dbName, tableName), SearchSetObject(testStruct{}), SearchSetObjectArrType([]*testStruct{}))
+SearchRet, err := localConnector.Search(SearchSetSpace(dbName, tableName), SearchSetObject(testStruct{}), SearchSetObjectArrType([]*testStruct{}))
 // 注意 因为 通过 reflect 包 生成新对象 （调用 interface{} 方法）返回的是指针， 所以 SearchSetObjectArrType 一般需要设置指针数组，否则会转换失败
 ```
 
@@ -84,27 +84,27 @@ insertRet, err := connector.Insert(InsertSetSpace("db_name", "table_name"),
 // 为什么需要 objectArrType: 和gorm的机制有关系，[]interface{} 类型无法正常判断数组内成员的 gorm tag
 
 // 更新数据
-updateRet, err := connector.Update(UpdateSetSpace("db_name", "table_name"),
+UpdateRet, err := connector.Update(UpdateSetSpace("db_name", "table_name"),
 		UpdateSetCondition("ID", "=", "1"),
 		UpdateAddObject(object{Name: "ToUpdateName"}), UpdateAddKeyArr([]string{"name"}))
 // 注意: gorm 默认会修改所有的字段，最好是通过 UpdateAddKeyArr 设置需要修改的字段列表
 
 // 查询数据 - select
-searchRet, err := connector.Search(SearchSetSpace("db_name", "table_name"),
+SearchRet, err := connector.Search(SearchSetSpace("db_name", "table_name"),
     SearchSetCondition("ID", "=", "1"), SearchSetObjectArrType([]object{}), SearchSetPageCondition(0, 10))
-objectArr := searchRet.ObjectArr.([]object{})
+objectArr := SearchRet.ObjectArr.([]object{})
 for _, currentObject := range objectArr {
 	log.Info("current object: %v", currentObject)
 }
 
 // 查询数据 - count
-searchRet, err := connector.Search(SearchSetSpace("db_name", "table_name"), SearchSetCondition("ID", "=", "1"))
-log.Info("count: %d", searchRet.Total)
+SearchRet, err := connector.Search(SearchSetSpace("db_name", "table_name"), SearchSetCondition("ID", "=", "1"))
+log.Info("count: %d", SearchRet.Total)
 
 // 查询数据 - distinct
-searchRet, err := connector.Distinct(SearchSetSpace("db_name", "table_name"),
+SearchRet, err := connector.Distinct(SearchSetSpace("db_name", "table_name"),
     SearchSetCondition("ID", "=", "1"), SearchSetKeyArr([]string{"ID", "name"}))
-for _, currentField := range searchRet.FieldArr {
+for _, currentField := range SearchRet.FieldArr {
 	for columnName, value := range currentField.GetMap() {
 		log.Info("distinct result: %s -> %s", columnName, value)
 	}

@@ -8,21 +8,21 @@ import (
 
 // Relational data connector
 type RDBConnector interface {
-	Insert(...rdbInsertConfigFunc) (updateRet, error)
-	Update(...rdbUpdateConfigFunc) (updateRet, error)
-	Delete(...rdbDeleteConfigFunc) (updateRet, error)
-	Search(...rdbSearchConfigFunc) (searchRet, error)
-	Count(...rdbSearchConfigFunc) (searchRet, error)
-	Distinct(...rdbSearchConfigFunc) (searchRet, error)
+	Insert(...RDBInsertConfigFunc) (UpdateRet, error)
+	Update(...RDBUpdateConfigFunc) (UpdateRet, error)
+	Delete(...RDBDeleteConfigFunc) (UpdateRet, error)
+	Search(...RDBSearchConfigFunc) (SearchRet, error)
+	Count(...RDBSearchConfigFunc) (SearchRet, error)
+	Distinct(...RDBSearchConfigFunc) (SearchRet, error)
 }
 
 // 更新类型动作结果
-type updateRet struct {
+type UpdateRet struct {
 	AffectedRows int
 }
 
 // 查询类型动作结果
-type searchRet struct {
+type SearchRet struct {
 	ObjectArr interface{}
 	FieldArr  []field
 	Page      int
@@ -30,9 +30,9 @@ type searchRet struct {
 	Total     int
 }
 
-// searchRet: 添加字段和对应值
-func (searchRet *searchRet) addField(field field) {
-	searchRet.FieldArr = append(searchRet.FieldArr, field)
+// SearchRet: 添加字段和对应值
+func (SearchRet *SearchRet) AddField(field field) {
+	SearchRet.FieldArr = append(SearchRet.FieldArr, field)
 }
 
 // 库表空间定义
@@ -42,7 +42,7 @@ type space struct {
 }
 
 // 获取库名.表名的格式
-func (space *space) getSpaceName() string {
+func (space *space) GetSpaceName() string {
 	return fmt.Sprintf("%s.%s", space.db, space.table)
 }
 
@@ -97,6 +97,26 @@ type rdbField struct {
 	keyArr []string
 }
 
+// 获取所有的 field 字段
+func (rdbField *rdbField) GetFieldArr() []field {
+	return rdbField.fieldArr
+}
+
+// 获取所有的 object
+func (rdbField *rdbField) GetObjectArr() []interface{} {
+	return rdbField.objectArr
+}
+
+// 获取数组类型
+func (rdbField *rdbField) GetObjectArrType() reflect.Type {
+	return rdbField.objectArrType
+}
+
+// 获取需要更新的字段列表
+func (rdbField *rdbField) GetKeyArr() []string {
+	return rdbField.keyArr
+}
+
 // 添加字段和对应值
 func (rdbField *rdbField) addField(field field) {
 	rdbField.fieldArr = append(rdbField.fieldArr, field)
@@ -134,13 +154,13 @@ type rdbInsertAction struct {
 }
 
 // 创建一个插入设置
-func makeRDBInsertAction() *rdbInsertAction {
+func MakeRDBInsertAction() *rdbInsertAction {
 	action := new(rdbInsertAction)
 	return action
 }
 
 // 插入数据配置方法定义
-type rdbInsertConfigFunc func(*rdbInsertAction)
+type RDBInsertConfigFunc func(*rdbInsertAction)
 
 // 设置表空间
 func InsertSetSpace(db, table string) func(*rdbInsertAction) {
@@ -198,13 +218,18 @@ type rdbUpdateAction struct {
 }
 
 // 创建一个更新设置
-func makeRDBUpdateAction() *rdbUpdateAction {
+func MakeRDBUpdateAction() *rdbUpdateAction {
 	action := new(rdbUpdateAction)
 	return action
 }
 
+// 获取更新条件
+func (action *rdbUpdateAction) GetCondition() UpdateCondition {
+	return action.condition
+}
+
 // 插入数据配置方法定义
-type rdbUpdateConfigFunc func(*rdbUpdateAction)
+type RDBUpdateConfigFunc func(*rdbUpdateAction)
 
 // 设置表空间
 func UpdateSetSpace(db, table string) func(*rdbUpdateAction) {
@@ -247,14 +272,19 @@ type rdbDeleteAction struct {
 	condition UpdateCondition
 }
 
+// 获取删除条件
+func (action *rdbDeleteAction) GetCondition() UpdateCondition {
+	return action.condition
+}
+
 // 创建一个删除配置
-func makeRDBDeleteAction() *rdbDeleteAction {
+func MakeRDBDeleteAction() *rdbDeleteAction {
 	action := new(rdbDeleteAction)
 	return action
 }
 
 // 删除数据配置方法定义
-type rdbDeleteConfigFunc func(*rdbDeleteAction)
+type RDBDeleteConfigFunc func(*rdbDeleteAction)
 
 // 设置表空间
 func DeleteSetSpace(db, table string) func(*rdbDeleteAction) {
@@ -286,14 +316,34 @@ type rdbSearchAction struct {
 	condition     SearchCondition
 }
 
+// 获取需要查询的字段列表
+func (action *rdbSearchAction) GetKeyArr() []string {
+	return action.keyArr
+}
+
+// 获取查询条件
+func (action *rdbSearchAction) GetCondition() SearchCondition {
+	return action.condition
+}
+
+// 获取用于format 的对象类型
+func (action *rdbSearchAction) GetObject() interface{} {
+	return action.object
+}
+
+// 获取查询条件
+func (action *rdbSearchAction) GetObjectArrType() reflect.Type {
+	return action.objectArrType
+}
+
 // 创建一个查询配置
-func makeRDBSearchAction() *rdbSearchAction {
+func MakeRDBSearchAction() *rdbSearchAction {
 	action := new(rdbSearchAction)
 	return action
 }
 
 // 查询数据配置方法定义
-type rdbSearchConfigFunc func(*rdbSearchAction)
+type RDBSearchConfigFunc func(*rdbSearchAction)
 
 // 设置表空间
 func SearchSetSpace(db, table string) func(*rdbSearchAction) {

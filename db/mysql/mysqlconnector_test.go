@@ -3,6 +3,7 @@ package db
 import (
 	"testing"
 
+	. "github.com/smiecj/go_common/db"
 	"github.com/smiecj/go_common/util/log"
 	"github.com/stretchr/testify/require"
 )
@@ -54,31 +55,31 @@ func TestMySQLConnector(t *testing.T) {
 	require.Equal(t, len(testStudentArr), insertRet.AffectedRows)
 
 	// 查询
-	searchRet, err := connector.Search(SearchSetSpace(testMySQLDBName, testMySQLTableName),
+	SearchRet, err := connector.Search(SearchSetSpace(testMySQLDBName, testMySQLTableName),
 		SearchSetObjectArrType(testStudentSlice), SearchSetPageCondition(0, 10))
 	require.Equal(t, nil, err)
-	require.LessOrEqual(t, 1, searchRet.Len)
-	studentArr := searchRet.ObjectArr.(studentSlice)
-	log.Info("[TestMySQLConnector] object arr len: %d, total: %d", len(studentArr), searchRet.Total)
+	require.LessOrEqual(t, 1, SearchRet.Len)
+	studentArr := SearchRet.ObjectArr.(studentSlice)
+	log.Info("[TestMySQLConnector] object arr len: %d, total: %d", len(studentArr), SearchRet.Total)
 	for _, currentStudent := range studentArr {
 		log.Info("[TestMySQLConnector] current student: %v", currentStudent)
 	}
 
 	// distinct
-	searchRet, err = connector.Distinct(SearchSetSpace(testMySQLDBName, testMySQLTableName),
+	SearchRet, err = connector.Distinct(SearchSetSpace(testMySQLDBName, testMySQLTableName),
 		SearchSetKeyArr([]string{"name", "grade"}))
 	require.Equal(t, nil, err)
-	log.Info("[TestMySQLConnector] distinct len: %d", searchRet.Len)
-	for _, currentField := range searchRet.FieldArr {
+	log.Info("[TestMySQLConnector] distinct len: %d", SearchRet.Len)
+	for _, currentField := range SearchRet.FieldArr {
 		log.Info("[TestMySQLConnector] Distinct name result: %s", currentField)
 	}
 
 	// 更新
-	updateRet, err := connector.Update(UpdateSetSpace(testMySQLDBName, testMySQLTableName),
+	UpdateRet, err := connector.Update(UpdateSetSpace(testMySQLDBName, testMySQLTableName),
 		UpdateSetCondition("name", "=", "xiaoming"),
 		UpdateAddObject(testStudent{Grade: 2}), UpdateAddKeyArr([]string{"grade"}))
 	require.Equal(t, nil, err)
-	require.LessOrEqual(t, 1, updateRet.AffectedRows)
+	require.LessOrEqual(t, 1, UpdateRet.AffectedRows)
 
 	// 删除
 	deleteRet, err := connector.Delete(DeleteSetSpace(testMySQLDBName, testMySQLTableName),
