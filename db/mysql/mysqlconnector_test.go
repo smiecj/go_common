@@ -45,7 +45,7 @@ type studentSlice []testStudent
 
 func TestMySQLConnector(t *testing.T) {
 	connector := GetMySQLConnector(
-		MySQLConnectOption{Host: testMySQLHost, Port: testMySQLPort, User: testMySQLUser, Password: testMySQLPassword})
+		MySQLConnectOption{Host: testMySQLHost, Port: testMySQLPort, Database: testMySQLDBName, User: testMySQLUser, Password: testMySQLPassword})
 
 	// 插入
 	var testStudentSlice studentSlice

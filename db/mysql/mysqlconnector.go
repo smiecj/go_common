@@ -30,6 +30,7 @@ type MySQLConnectOption struct {
 	Port     int
 	User     string
 	Password string
+	Database string
 	IsSSL    bool
 }
 
@@ -41,6 +42,7 @@ type mysqlConnector struct {
 // mysql: 插入数据
 // 后续: 对批量插入场景，单次插入的数据量进行控制
 func (connector *mysqlConnector) Insert(funcArr ...RDBInsertConfigFunc) (ret UpdateRet, err error) {
+	// 后续: 考虑是否要适配，只传入表名，支持使用默认库名的场景
 	action := MakeRDBInsertAction()
 	for _, currentFunc := range funcArr {
 		currentFunc(action)
@@ -254,7 +256,7 @@ func (connector *mysqlConnector) Distinct(funcArr ...RDBSearchConfigFunc) (ret S
 	fieldValueArr := make([]string, 0)
 	// 查询包含多个字段，通过 SQL concat 关键字进行拼接
 	var distinctColumn string
-	if 1 == len(keyArr) {
+	if len(keyArr) == 1 {
 		distinctColumn = keyArr[0]
 	} else {
 		distinctColumn = "CONCAT("
@@ -308,8 +310,8 @@ func GetMySQLConnector(option MySQLConnectOption) RDBConnector {
 
 	// useAffectedRows 等配置提示无效，后续需要确认原因
 	extendParam := ""
-	connectStr := fmt.Sprintf("%s:%s@tcp(%s:%d)/?charset=utf8mb4%s",
-		option.User, option.Password, option.Host, option.Port, extendParam)
+	connectStr := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8mb4%s",
+		option.User, option.Password, option.Host, option.Port, option.Database, extendParam)
 	// gorm 日志默认不打印
 	db, err := gorm.Open(mysql.Open(connectStr), &gorm.Config{Logger: logger.Discard})
 

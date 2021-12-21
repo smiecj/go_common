@@ -115,6 +115,16 @@ deleteRet, err := connector.Delete(DeleteSetSpace("db_name", "table_name"),
 		DeleteSetCondition("ID", "=", "1"))
 ```
 
+### impala
+引用: github.com/bippio/go-impala
+
+```
+connector := GetImpalaConnector(ImpalaConnectOption{Host: "impala_host", Port: 21050})
+
+// count
+ret, err := connector.Count(db.SearchSetSpace(db_name, table_name))
+```
+
 ## 自定义配置 yaml 文件解析
 ### 获取 配置管理器
 ```
