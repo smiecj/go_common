@@ -1,4 +1,4 @@
-package db
+package local
 
 import (
 	"testing"
