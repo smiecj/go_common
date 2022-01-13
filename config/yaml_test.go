@@ -31,11 +31,14 @@ func TestYamlConfig(t *testing.T) {
 
 	// get config
 	host, err := config.Get(testSpaceDB, testKeyMySQLHost)
-	require.Equal(t, nil, err)
+	require.Empty(t, err)
 	port, err := config.Get(testSpaceDB, testKeyMySQLPort)
-	require.Equal(t, nil, err)
+	require.Empty(t, err)
 	require.Equal(t, testValueMySQLHost, host)
 	require.Equal(t, testValueMySQLPort, port)
+	spaceNameArr, err := config.GetAllSpaceName()
+	require.Empty(t, err)
+	require.NotEmpty(t, spaceNameArr)
 
 	// unmarshal
 	dbConfigObj := dbConfig{}
@@ -46,10 +49,15 @@ func TestYamlConfig(t *testing.T) {
 
 	// get space & set config
 	space, err := config.GetSpace(testSpaceDB)
-	require.Equal(t, nil, err)
+	require.Empty(t, err)
 	host, err = space.Get(testKeyMySQLHost)
-	require.Equal(t, nil, err)
+	require.Empty(t, err)
 	require.Equal(t, testValueMySQLHost, host)
+	keyArr, err := space.GetAllKey()
+	require.Empty(t, err)
+	require.NotEmpty(t, keyArr)
+
+	// unmarshal
 	_ = space.Unmarshal(&dbConfigObj)
 	require.Equal(t, testValueMySQLHost, dbConfigObj.MysqlHost)
 	require.Equal(t, testValueMySQLPort, dbConfigObj.MysqlPort)

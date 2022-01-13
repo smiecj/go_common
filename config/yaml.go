@@ -40,6 +40,16 @@ func (space *yamlSpace) Get(key string) (interface{}, error) {
 	return ret, nil
 }
 
+func (space *yamlSpace) GetAllKey() (retArr []string, err error) {
+	space.mapLock.RLock()
+	defer space.mapLock.RUnlock()
+
+	for key := range space.configMap {
+		retArr = append(retArr, key)
+	}
+	return
+}
+
 // yaml space set config
 func (space *yamlSpace) Set(key string, value interface{}) error {
 	space.mapLock.Lock()
@@ -95,6 +105,15 @@ func (config *yamlManager) Get(spaceName, key string) (ret interface{}, err erro
 	return space.Get(key)
 }
 
+// yaml get all space name
+func (config *yamlManager) GetAllSpaceName() (retArr []string, err error) {
+	// space map 目前只有读操作，不需要加锁
+	for key := range config.spaceMap {
+		retArr = append(retArr, key)
+	}
+	return
+}
+
 // yaml config get space
 func (config *yamlManager) GetSpace(spaceName string) (space space, err error) {
 	space, err = config.getSpace(spaceName)
@@ -130,6 +149,11 @@ func (config *yamlManager) getSpace(spaceName string) (space, error) {
 		return nil, errorcode.BuildError(errorcode.SpaceNotExist)
 	}
 	return space, nil
+}
+
+// update: yaml config not implement (current no need implement)
+func (config *yamlManager) Update() error {
+	return errorcode.BuildError(errorcode.NotImplement)
 }
 
 // 获取 yaml 配置中心单例
