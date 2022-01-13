@@ -292,7 +292,7 @@ func (connector *mysqlConnector) Distinct(funcArr ...RDBSearchConfigFunc) (ret S
 }
 
 // 获取 mysql 连接器
-func GetMySQLConnector(option MySQLConnectOption) RDBConnector {
+func GetMySQLConnector(option MySQLConnectOption) (RDBConnector, error) {
 	var connector RDBConnector
 	mysqlConnectorLock.RLock()
 	if nil == mysqlConnectorMap {
@@ -302,7 +302,7 @@ func GetMySQLConnector(option MySQLConnectOption) RDBConnector {
 	mysqlConnectorLock.RUnlock()
 
 	if nil != connector {
-		return connector
+		return connector, nil
 	}
 
 	mysqlConnectorLock.Lock()
@@ -318,15 +318,15 @@ func GetMySQLConnector(option MySQLConnectOption) RDBConnector {
 	// mysql 连接能成功创建，并执行 SQL, 才算是创建成功
 	if nil != err {
 		log.Error("[GetMySQLConnector] Get mysql connector failed, please check config: %s, err: %s", connectStr, err.Error())
-		return nil
+		return nil, errorcode.BuildErrorWithMsg(errorcode.DBConnectFailed, err.Error())
 	}
 	err = db.Exec("SELECT 1;").Error
 	if nil != err {
 		log.Error("[GetMySQLConnector] Exec mysql check sql failed, please check config: %s, err: %s", connectStr, err.Error())
-		return nil
+		return nil, errorcode.BuildErrorWithMsg(errorcode.DBConnectFailed, err.Error())
 	}
 	mysqlConnector := new(mysqlConnector)
 	mysqlConnector.db = db
 	mysqlConnectorMap[option] = mysqlConnector
-	return mysqlConnector
+	return mysqlConnector, nil
 }

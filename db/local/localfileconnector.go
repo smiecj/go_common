@@ -243,7 +243,7 @@ func (connector *localFileConnector) cleanInvalidChar(toWriteStr string) (retStr
 }
 
 // 获取 根据目录路径匹配的单例
-func GetLocalFileConnector(folderPath string) RDBConnector {
+func GetLocalFileConnector(folderPath string) (RDBConnector, error) {
 	var connector RDBConnector
 	fileConnectorLock.RLock()
 	if nil == fileConnectorMap {
@@ -253,7 +253,7 @@ func GetLocalFileConnector(folderPath string) RDBConnector {
 	fileConnectorLock.RUnlock()
 
 	if nil != connector {
-		return connector
+		return connector, nil
 	}
 
 	fileConnectorLock.Lock()
@@ -263,10 +263,10 @@ func GetLocalFileConnector(folderPath string) RDBConnector {
 	err := os.MkdirAll(folderPath, os.ModeDir)
 	if nil != err {
 		log.Error("[GetLocalFileConnector] Get local connector failed, folder create failed: %s", folderPath)
-		return nil
+		return nil, errorcode.BuildErrorWithMsg(errorcode.DBConnectFailed, err.Error())
 	}
 	fileConnector := new(localFileConnector)
 	fileConnector.localFolderPath = folderPath
 	fileConnectorMap[folderPath] = fileConnector
-	return fileConnector
+	return fileConnector, nil
 }

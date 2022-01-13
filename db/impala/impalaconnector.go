@@ -85,7 +85,7 @@ func (connector *impalaConnector) Distinct(funcArr ...RDBSearchConfigFunc) (ret 
 }
 
 // 获取 impala 连接器
-func GetImpalaConnector(option ImpalaConnectOption) RDBConnector {
+func GetImpalaConnector(option ImpalaConnectOption) (RDBConnector, error) {
 	var connector RDBConnector
 	impalaConnectorLock.RLock()
 	if nil == impalaConnectorMap {
@@ -95,7 +95,7 @@ func GetImpalaConnector(option ImpalaConnectOption) RDBConnector {
 	impalaConnectorLock.RUnlock()
 
 	if nil != connector {
-		return connector
+		return connector, nil
 	}
 
 	impalaConnectorLock.Lock()
@@ -114,11 +114,11 @@ func GetImpalaConnector(option ImpalaConnectOption) RDBConnector {
 	_, err := db.QueryContext(ctx, "SHOW DATABASES")
 	if nil != err {
 		log.Error("[GetImpalaConnector] Get Impala connector failed: %s", err.Error())
-		return nil
+		return nil, errorcode.BuildErrorWithMsg(errorcode.DBConnectFailed, err.Error())
 	}
 
 	ret := new(impalaConnector)
 	ret.innerConnector = innerConnector
 	impalaConnectorMap[option] = ret
-	return ret
+	return ret, nil
 }

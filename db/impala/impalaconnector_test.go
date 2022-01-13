@@ -17,8 +17,8 @@ const (
 )
 
 func TestImpalaConnector(t *testing.T) {
-	connector := GetImpalaConnector(ImpalaConnectOption{Host: testImpalaHost, Port: testImpalaPort})
-	require.NotEmpty(t, connector)
+	connector, err := GetImpalaConnector(ImpalaConnectOption{Host: testImpalaHost, Port: testImpalaPort})
+	require.Empty(t, err)
 
 	ret, err := connector.Count(db.SearchSetSpace(testDBName, testTableName))
 	require.Empty(t, err)

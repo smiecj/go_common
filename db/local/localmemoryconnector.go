@@ -125,13 +125,13 @@ func (connector *localMemoryConnector) Distinct(funcArr ...RDBSearchConfigFunc) 
 }
 
 // 实现本地内存连接器
-func GetLocalMemoryConnector() RDBConnector {
+func GetLocalMemoryConnector() (RDBConnector, error) {
 	localMemoryConnectorOnce.Do(func() {
 		localConnector := new(localMemoryConnector)
 		localConnector.storage = make(map[string]map[string]string)
 		localMemoryConnectorSingleton = localConnector
 	})
-	return localMemoryConnectorSingleton
+	return localMemoryConnectorSingleton, nil
 }
 
 // 后续: 初始化 连接器配置中，增加 id generator 配置

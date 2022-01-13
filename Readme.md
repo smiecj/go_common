@@ -54,7 +54,7 @@ SearchRet, err := localConnector.Search(SearchSetSpace(dbName, tableName))
 ### 文件
 ```
 // 存入数据
-localConnector := GetLocalFileConnector(file_store_folder)
+localConnector, err := GetLocalFileConnector(file_store_folder)
 
 // insert field
 field := db.BuildNewField()
@@ -75,7 +75,7 @@ SearchRet, err := localConnector.Search(SearchSetSpace(dbName, tableName), Searc
 
 ### mysql (gorm)
 ```
-connector := GetMySQLConnector(MySQLConnectOption{Host: host, Port: port, User: user, Password: password})
+connector, err := GetMySQLConnector(MySQLConnectOption{Host: host, Port: port, User: user, Password: password})
 
 // 存入数据
 insertRet, err := connector.Insert(InsertSetSpace("db_name", "table_name"), 
@@ -119,7 +119,7 @@ deleteRet, err := connector.Delete(DeleteSetSpace("db_name", "table_name"),
 引用: github.com/bippio/go-impala
 
 ```
-connector := GetImpalaConnector(ImpalaConnectOption{Host: "impala_host", Port: 21050})
+connector, err := GetImpalaConnector(ImpalaConnectOption{Host: "impala_host", Port: 21050})
 
 // count
 ret, err := connector.Count(db.SearchSetSpace(db_name, table_name))
@@ -129,7 +129,7 @@ ret, err := connector.Count(db.SearchSetSpace(db_name, table_name))
 ### 获取 配置管理器
 ```
 // 本地yaml配置文件
-config := config.GetYamlConfig(config_file_name)
+config, err := config.GetYamlConfig(config_file_name)
 ```
 
 ### 获取具体配置

@@ -44,8 +44,9 @@ type testStudent struct {
 type studentSlice []testStudent
 
 func TestMySQLConnector(t *testing.T) {
-	connector := GetMySQLConnector(
+	connector, err := GetMySQLConnector(
 		MySQLConnectOption{Host: testMySQLHost, Port: testMySQLPort, Database: testMySQLDBName, User: testMySQLUser, Password: testMySQLPassword})
+	require.Empty(t, err)
 
 	// 插入
 	var testStudentSlice studentSlice

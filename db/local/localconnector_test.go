@@ -27,7 +27,7 @@ var (
 )
 
 func TestLocalMemoryConnector(t *testing.T) {
-	localConnector := GetLocalMemoryConnector()
+	localConnector, _ := GetLocalMemoryConnector()
 	field := BuildNewField()
 	field.AddMap(testKeyValueMap)
 	UpdateRet, _ := localConnector.Insert(InsertSetSpace(testDBName, testTableName), InsertAddField(field))
@@ -37,7 +37,8 @@ func TestLocalMemoryConnector(t *testing.T) {
 }
 
 func TestLocalFileConnector(t *testing.T) {
-	localConnector := GetLocalFileConnector("/tmp/golang")
+	localConnector, err := GetLocalFileConnector("/tmp/golang")
+	require.Empty(t, err)
 
 	// input field
 	field := BuildNewField()
