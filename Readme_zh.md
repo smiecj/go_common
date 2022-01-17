@@ -1,13 +1,11 @@
-[中文](https://github.com/smiecj/go_common/blob/master/Readme.md)
-
 # go common
 
-go common library, supply some common library for other repo to use
+提供 go 相关的公共库，供其他业务仓库使用，对一些常用的功能进行封装，方便使用
 
-e.g. http client, config manager and db connector etc.
+如：http 客户端、公共配置解析、公共数据库连接类等
 
-# implemented features
-## http client
+# 已实现功能
+## http 客户端
 
 ```
 import "github.com/smiecj/go_common/http"
@@ -29,33 +27,33 @@ import "github.com/smiecj/go_common/util/log"
 log.Info("msg: %s", msg)
 ```
 
-## errorcode
+## 错误码
 ```
 import log "github.com/smiecj/go_common/errorcode"
 return errorcode.ServiceError
 
-// return self define error code
+// 返回自定义错误
 return errorcode.BuildErrorWithMsg(errorcode.NetHandleFailed, "connect server failed")
 // or: msg same as code
 return errorcode.BuildError(errorcode.NetHandleFailed)
 ```
 
-## DB connector
-### local memory connector
+## DB 连接器
+### 本地内存
 ```
-// store
+// 存入数据
 localConnector := GetLocalMemoryConnector()
 field := db.BuildNewField()
 field.AddKeyValue("key", "value")
 insertRet, err := localConnector.Insert(InsertSetSpace(dbName, tableName), InsertAddField(field))
 
-// query
+// 查询数据
 SearchRet, err := localConnector.Search(SearchSetSpace(dbName, tableName))
 ```
 
-### local file connector
+### 文件
 ```
-// get connector
+// 存入数据
 localConnector, err := GetLocalFileConnector(file_store_folder)
 
 // insert field
@@ -67,31 +65,31 @@ insertRet, err := localConnector.Insert(InsertSetSpace(dbName, tableName), Inser
 insertRet, err := localConnector.Insert(InsertSetSpace(dbName, tableName), InsertAddObject(obj))
 
 
-// query
+// 查询数据
 // search field
 SearchRet, err := localConnector.Search(SearchSetSpace(dbName, tableName))
 // search object
 SearchRet, err := localConnector.Search(SearchSetSpace(dbName, tableName), SearchSetObject(testStruct{}), SearchSetObjectArrType([]*testStruct{}))
-// notice: local file connector use reflect lib to unmarshal object everyline, so please use pointer array when set object array type
+// 注意 因为 通过 reflect 包 生成新对象 （调用 interface{} 方法）返回的是指针， 所以 SearchSetObjectArrType 一般需要设置指针数组，否则会转换失败
 ```
 
 ### mysql (gorm)
 ```
 connector, err := GetMySQLConnector(MySQLConnectOption{Host: host, Port: port, User: user, Password: password})
 
-// store
+// 存入数据
 insertRet, err := connector.Insert(InsertSetSpace("db_name", "table_name"), 
     InsertAddObjectArr([]objectArr{obj1, obj2}), InsertSetObjectArrType([]object{}))
-// notice: you can set an empty slice when call InsertSetObjectArrType, SearchSetObjectArrType, when call reflect lib, the array will automatically init
+// 备注: 设置插入的数据数组格式的时候，直接插入一个大小为0 的数组即可，connector 内部逻辑会赋予 reflect.Type 格式
 // 为什么需要 objectArrType: 和gorm的机制有关系，[]interface{} 类型无法正常判断数组内成员的 gorm tag
 
-// update
+// 更新数据
 UpdateRet, err := connector.Update(UpdateSetSpace("db_name", "table_name"),
 		UpdateSetCondition("ID", "=", "1"),
 		UpdateAddObject(object{Name: "ToUpdateName"}), UpdateAddKeyArr([]string{"name"}))
 // 注意: gorm 默认会修改所有的字段，最好是通过 UpdateAddKeyArr 设置需要修改的字段列表
 
-// query - select
+// 查询数据 - select
 SearchRet, err := connector.Search(SearchSetSpace("db_name", "table_name"),
     SearchSetCondition("ID", "=", "1"), SearchSetObjectArrType([]object{}), SearchSetPageCondition(0, 10))
 objectArr := SearchRet.ObjectArr.([]object{})
@@ -99,11 +97,11 @@ for _, currentObject := range objectArr {
 	log.Info("current object: %v", currentObject)
 }
 
-// query - count
+// 查询数据 - count
 SearchRet, err := connector.Search(SearchSetSpace("db_name", "table_name"), SearchSetCondition("ID", "=", "1"))
 log.Info("count: %d", SearchRet.Total)
 
-// query - distinct
+// 查询数据 - distinct
 SearchRet, err := connector.Distinct(SearchSetSpace("db_name", "table_name"),
     SearchSetCondition("ID", "=", "1"), SearchSetKeyArr([]string{"ID", "name"}))
 for _, currentField := range SearchRet.FieldArr {
@@ -112,13 +110,13 @@ for _, currentField := range SearchRet.FieldArr {
 	}
 }
 
-// deletr
+// 删除数据
 deleteRet, err := connector.Delete(DeleteSetSpace("db_name", "table_name"),
 		DeleteSetCondition("ID", "=", "1"))
 ```
 
 ### impala
-refer: github.com/bippio/go-impala
+引用: github.com/bippio/go-impala
 
 ```
 connector, err := GetImpalaConnector(ImpalaConnectOption{Host: "impala_host", Port: 21050})
@@ -127,7 +125,7 @@ connector, err := GetImpalaConnector(ImpalaConnectOption{Host: "impala_host", Po
 ret, err := connector.Count(db.SearchSetSpace(db_name, table_name))
 ```
 
-## config manager
+## 自定义配置 yaml 文件解析
 ### config file format
 db: -- space
   mysql_host: localhost -- key: value
@@ -135,9 +133,9 @@ db: -- space
   db_arr: 
     - school
 
-### yaml config manager
+### yaml 配置解析
 ```
-// get config manager
+// 从本地 yaml 配置文件 获取 配置管理
 config, err := config.GetYamlConfig(config_file_name)
 
 // get config value by space name and key
@@ -167,12 +165,12 @@ err := sender.Send(AddReceiver("receiver mail account"), SetTitle("test_title"),
 
 ## alerter
 ```
-# get mail alerter, you have to get mail sender first
+# 获取邮件告警发送器，需要先设置 sender，获取 sender 的方式参考 mail sender
 alerter := GetMailAlerter(sender, testDefaultReceiver)
 
-# send alert
+# 发送告警
 alerter.Alert(SetAlertTitleAndMsg(testAlertTitle, testAlertMsg))
 ```
 
-# todo
-## RPC interface
+# 待实现功能
+## RPC 框架
