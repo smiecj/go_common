@@ -32,7 +32,14 @@ func SetAlertMsg(msg string) alertConfSetter {
 	}
 }
 
-// 设置告警接收人
+// 设置告警接收人 (单个)
+func SetReceiver(receiver string) alertConfSetter {
+	return func(conf *alertConf) {
+		conf.receiverArr = []string{receiver}
+	}
+}
+
+// 设置告警接收人 (多个)
 func SetReceiverArr(receiverArr []string) alertConfSetter {
 	return func(conf *alertConf) {
 		conf.receiverArr = make([]string, 0)

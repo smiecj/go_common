@@ -1,4 +1,4 @@
-[中文](https://github.com/smiecj/go_common/blob/master/Readme.md)
+[中文](https://github.com/smiecj/go_common/blob/master/Readme_zh.md)
 
 # go common
 
@@ -83,13 +83,13 @@ connector, err := GetMySQLConnector(MySQLConnectOption{Host: host, Port: port, U
 insertRet, err := connector.Insert(InsertSetSpace("db_name", "table_name"), 
     InsertAddObjectArr([]objectArr{obj1, obj2}), InsertSetObjectArrType([]object{}))
 // notice: you can set an empty slice when call InsertSetObjectArrType, SearchSetObjectArrType, when call reflect lib, the array will automatically init
-// 为什么需要 objectArrType: 和gorm的机制有关系，[]interface{} 类型无法正常判断数组内成员的 gorm tag
+// notice: objectArrType is needed because []interface{} cannot be recognized in gorm
 
 // update
 UpdateRet, err := connector.Update(UpdateSetSpace("db_name", "table_name"),
 		UpdateSetCondition("ID", "=", "1"),
 		UpdateAddObject(object{Name: "ToUpdateName"}), UpdateAddKeyArr([]string{"name"}))
-// 注意: gorm 默认会修改所有的字段，最好是通过 UpdateAddKeyArr 设置需要修改的字段列表
+// notice: gorm will update all fields by default value, so it's better to set keyArr when update
 
 // query - select
 SearchRet, err := connector.Search(SearchSetSpace("db_name", "table_name"),
@@ -176,3 +176,5 @@ alerter.Alert(SetAlertTitleAndMsg(testAlertTitle, testAlertMsg))
 
 # todo
 ## RPC interface
+
+## alert convergence

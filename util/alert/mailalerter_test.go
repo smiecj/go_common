@@ -4,12 +4,13 @@ import (
 	"testing"
 
 	"github.com/smiecj/go_common/util/mail"
+	"github.com/stretchr/testify/require"
 )
 
 const (
-	testDefaultReceiver = "default_receiver"
-	testMailToken       = "token"
-	testSender          = "sender"
+	testMailToken = "token"
+	testSender    = "sender"
+	testReceiver  = "receiver"
 
 	testAlertTitle = "alert title"
 	testAlertMsg   = "alert msg"
@@ -20,6 +21,7 @@ func TestSendMail(t *testing.T) {
 		Token:  testMailToken,
 		Sender: testSender,
 	})
-	alerter := GetMailAlerter(sender, testDefaultReceiver)
-	alerter.Alert(SetAlertTitleAndMsg(testAlertTitle, testAlertMsg))
+	alerter := GetMailAlerter(sender)
+	err := alerter.Alert(SetAlertTitleAndMsg(testAlertTitle, testAlertMsg), SetReceiver(testReceiver))
+	require.Empty(t, err)
 }

@@ -1,13 +1,13 @@
 package alert
 
 import (
+	"github.com/smiecj/go_common/errorcode"
 	"github.com/smiecj/go_common/util/mail"
 )
 
 // mail alerter
 type mailAlerter struct {
-	mailSender      mail.Sender
-	defaultReceiver string
+	mailSender mail.Sender
 }
 
 // send an email alert
@@ -18,25 +18,18 @@ func (alerter *mailAlerter) Alert(alertConfSetterArr ...alertConfSetter) error {
 	}
 
 	if conf.msg == "" {
-		// return errorcode.BuildError()
-		return nil
+		return errorcode.BuildError(errorcode.AlertMsgEmpty)
+	}
+	if len(conf.receiverArr) == 0 {
+		return errorcode.BuildError(errorcode.AlertReceiverEmpty)
 	}
 
-	// if receiver is not set, use default receiver
-	var err error
-	if len(conf.receiverArr) > 0 {
-		err = alerter.mailSender.Send(mail.SetReceiver(conf.receiverArr), mail.SetTitle(conf.title), mail.SetContent(conf.msg))
-	} else {
-		err = alerter.mailSender.Send(mail.AddReceiver(alerter.defaultReceiver), mail.SetTitle(conf.title), mail.SetContent(conf.msg))
-	}
-
-	return err
+	return alerter.mailSender.Send(mail.SetReceiver(conf.receiverArr), mail.SetTitle(conf.title), mail.SetContent(conf.msg))
 }
 
 // get mail alerter
-func GetMailAlerter(sender mail.Sender, defaultReceiver string) Alerter {
+func GetMailAlerter(sender mail.Sender) Alerter {
 	return &mailAlerter{
-		mailSender:      sender,
-		defaultReceiver: defaultReceiver,
+		mailSender: sender,
 	}
 }

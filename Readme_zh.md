@@ -174,3 +174,5 @@ alerter.Alert(SetAlertTitleAndMsg(testAlertTitle, testAlertMsg))
 
 # 待实现功能
 ## RPC 框架
+
+## 告警收敛
