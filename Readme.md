@@ -15,18 +15,18 @@ client := GetHTTPClient()
 client.Do(Get(), Url("http://..."))
 ```
 
-## file writer
-
-```
-import "github.com/smiecj/go_common/util/file"
-file.Write("/tmp/test.log", "content", file.ModeCreate)
-```
-
 ## logger
 
 ```
 import "github.com/smiecj/go_common/util/log"
 log.Info("msg: %s", msg)
+```
+
+## file writer
+
+```
+import "github.com/smiecj/go_common/util/file"
+file.Write("/tmp/test.log", "content", file.ModeCreate)
 ```
 
 ## errorcode
@@ -195,6 +195,27 @@ metrics, err := manager.GetMetrics(currentTestCase.metricsName)
 
 // set metrics value, need transform to actual metrics type first ( e.g. metrics to prometheusGauge )
 metrics.(*PrometheusGauge).With(MetricsLabel{"name": "smiecj"}).Set(10)
+```
+
+## other common tool
+
+### time
+```
+import "github.com/smiecj/go_common/util/time"
+
+// get current timestamp (format: 2006-01-02 15:04:05)
+time.GetCurrentTimestamp()
+```
+
+### net
+```
+import "github.com/smiecj/go_common/util/net"
+
+// get local ipv4
+ip, err := net.GetLocalIPV4()
+
+// check local port is used
+isUsed := net.CheckLocalPortIsUsed(22)
 ```
 
 # todo

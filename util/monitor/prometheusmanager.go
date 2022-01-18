@@ -10,7 +10,7 @@ import (
 
 var (
 	prometheusMonitorManagerInitOnce sync.Once
-	prometheusMonitorManagerInstance MonitorManager
+	prometheusMonitorManagerInstance Manager
 )
 
 // prometheus monitor manager 初始化配置
@@ -43,7 +43,7 @@ func (manager *prometheusMonitorManager) RemoveMetrics(name string) error {
 }
 
 // 获取 prometheus 监控管理器，单例模式
-func GetPrometheusMonitorManager(conf PrometheusMonitorManagerConf) MonitorManager {
+func GetPrometheusMonitorManager(conf PrometheusMonitorManagerConf) Manager {
 	prometheusMonitorManagerInitOnce.Do(func() {
 		manager := new(prometheusMonitorManager)
 		manager.conf = newMonitorConf(monitorDescToPrometheusMetrics)

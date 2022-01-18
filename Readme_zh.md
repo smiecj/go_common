@@ -196,6 +196,27 @@ metrics, err := manager.GetMetrics(currentTestCase.metricsName)
 metrics.(*PrometheusGauge).With(MetricsLabel{"name": "smiecj"}).Set(10)
 ```
 
+## 其他公共工具方法
+
+### time
+```
+import "github.com/smiecj/go_common/util/time"
+
+// 获取当前时间戳 (格式: 2006-01-02 15:04:05)
+time.GetCurrentTimestamp()
+```
+
+### net
+```
+import "github.com/smiecj/go_common/util/net"
+
+// 获取本机 ipv4 ip
+ip, err := net.GetLocalIPV4()
+
+// 获取本机是否占用了指定端口
+isUsed := net.CheckLocalPortIsUsed(22)
+```
+
 # 待实现功能
 ## RPC 框架
 
