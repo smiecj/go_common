@@ -174,7 +174,32 @@ alerter := GetMailAlerter(sender, testDefaultReceiver)
 alerter.Alert(SetAlertTitleAndMsg(testAlertTitle, testAlertMsg))
 ```
 
+## monitor
+monitor manager supply metrics management. The actual implement include prometheus. User is no need to concern about how metrics upload to monitor service
+
+Current support metrics: gauge, counter
+
+```
+// get prometheus monitor manager
+manager := GetPrometheusMonitorManager(
+	PrometheusMonitorManagerConf{
+		Port: http_server_port,
+})
+
+// add metrics
+metricsDesc := NewMonitorMetrics(Gauge, "test_gauge", "test gauge", LabelKey{"name"})
+err := manager.AddMetrics(metricsDesc)
+
+// get metrics
+metrics, err := manager.GetMetrics(currentTestCase.metricsName)
+
+// set metrics value, need transform to actual metrics type first ( e.g. metrics to prometheusGauge )
+metrics.(*PrometheusGauge).With(MetricsLabel{"name": "smiecj"}).Set(10)
+```
+
 # todo
 ## RPC interface
 
 ## alert convergence
+
+## alert set default receiver

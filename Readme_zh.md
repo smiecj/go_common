@@ -154,7 +154,7 @@ configSpace.Unmarshal(&dbConfig)
 log.Info(dbConfig.Host)
 ```
 
-## mail sender
+## mail sender 邮件发送器
 ```
 sender := NewQQMailSender(MailSenderConf{
 		Token:  "qq mail token",
@@ -163,16 +163,42 @@ sender := NewQQMailSender(MailSenderConf{
 err := sender.Send(AddReceiver("receiver mail account"), SetTitle("test_title"), SetContent("test_content"), SetNickName("nickname"))
 ```
 
-## alerter
+## alerter 告警发送器
+alerter 发送告警的功能依赖 sender，本身还会带简单的告警收敛的功能，比如10s 内一样的告警内容不会重复发送
+
 ```
-# 获取邮件告警发送器，需要先设置 sender，获取 sender 的方式参考 mail sender
+// 获取邮件告警发送器，需要先设置 sender，获取 sender 的方式参考 mail sender
 alerter := GetMailAlerter(sender, testDefaultReceiver)
 
-# 发送告警
+// 发送告警
 alerter.Alert(SetAlertTitleAndMsg(testAlertTitle, testAlertMsg))
+```
+
+## monitor
+监控功能封装，提供基本的监控指标 配置方法，上层实现包括 prometheus，使用者不需要关注监控的具体实现
+当前支持指标: gauge, counter
+
+```
+// 获取 Prometheus 监控，单例模式
+manager := GetPrometheusMonitorManager(
+	PrometheusMonitorManagerConf{
+		Port: 开放端口,
+})
+
+// 添加一个指标
+metricsDesc := NewMonitorMetrics(Gauge, "test_gauge", "test gauge", LabelKey{"name"})
+err := manager.AddMetrics(metricsDesc)
+
+// 获取指标
+metrics, err := manager.GetMetrics(currentTestCase.metricsName)
+
+// 设置指标值（需要用户侧在外面自行强转成具体的类型，比如 PrometheusGauge ）
+metrics.(*PrometheusGauge).With(MetricsLabel{"name": "smiecj"}).Set(10)
 ```
 
 # 待实现功能
 ## RPC 框架
 
 ## 告警收敛
+
+## 告警设置默认接收人
