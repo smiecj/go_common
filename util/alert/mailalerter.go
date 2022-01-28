@@ -20,9 +20,6 @@ func (alerter *mailAlerter) Alert(alertConfSetterArr ...alertConfSetter) error {
 	if conf.msg == "" {
 		return errorcode.BuildError(errorcode.AlertMsgEmpty)
 	}
-	if len(conf.receiverArr) == 0 {
-		return errorcode.BuildError(errorcode.AlertReceiverEmpty)
-	}
 
 	return alerter.mailSender.Send(mail.SetReceiver(conf.receiverArr), mail.SetTitle(conf.title), mail.SetContent(conf.msg))
 }

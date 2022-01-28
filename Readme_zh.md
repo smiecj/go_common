@@ -136,7 +136,7 @@ db: -- space
 ### yaml 配置解析
 ```
 // 从本地 yaml 配置文件 获取 配置管理
-config, err := config.GetYamlConfig(config_file_name)
+config, err := config.GetYamlConfigManager(config_file_name)
 
 // get config value by space name and key
 value, err := config.get(space_name, key)
@@ -155,12 +155,20 @@ log.Info(dbConfig.Host)
 ```
 
 ## mail sender 邮件发送器
+mail_conf.yml 配置文件内容:
 ```
-sender := NewQQMailSender(MailSenderConf{
-		Token:  "qq mail token",
-		Sender: "sender qq mail account",
-	})
-err := sender.Send(AddReceiver("receiver mail account"), SetTitle("test_title"), SetContent("test_content"), SetNickName("nickname"))
+mail:
+  token: smtp_token
+  sender: sender_email
+  receiver: receiver_email(split by comma)
+```
+
+发送逻辑:
+```
+configManager, err := config.GetYamlConfigManager("mail_conf.yml")
+sender, err := NewQQMailSender(configManager)
+// 可以不设置 AddReceiver，默认收件人 使用 配置中定义的收件人
+err = sender.Send(AddReceiver("receiver mail account"), SetTitle("test_title"), SetContent("test_content"), SetNickName("nickname"))
 ```
 
 ## alerter 告警发送器

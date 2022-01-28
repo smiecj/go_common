@@ -138,7 +138,7 @@ db: -- space
 ### yaml config manager
 ```
 // get config manager
-config, err := config.GetYamlConfig(config_file_name)
+config, err := config.GetYamlConfigManager(config_file_name)
 
 // get config value by space name and key
 value, err := config.get(space_name, key)
@@ -157,12 +157,20 @@ log.Info(dbConfig.Host)
 ```
 
 ## mail sender
+mail_conf.yml:
 ```
-sender := NewQQMailSender(MailSenderConf{
-		Token:  "qq mail token",
-		Sender: "sender qq mail account",
-	})
-err := sender.Send(AddReceiver("receiver mail account"), SetTitle("test_title"), SetContent("test_content"), SetNickName("nickname"))
+mail:
+  token: smtp_token
+  sender: sender_email
+  receiver: receiver_email(split by comma)
+```
+
+send mail
+```
+configManager, err := config.GetYamlConfigManager("mail_conf.yml")
+sender, err := NewQQMailSender(configManager)
+// AddReceiver is not necessary, defaultly use receiver in config file (mail_conf.yml)
+err = sender.Send(AddReceiver("receiver mail account"), SetTitle("test_title"), SetContent("test_content"), SetNickName("nickname"))
 ```
 
 ## alerter

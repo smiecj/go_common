@@ -26,7 +26,7 @@ type dbConfig struct {
 
 func TestYamlConfig(t *testing.T) {
 	// get config manager
-	config, err := GetYamlConfig(fmt.Sprintf("%s%sexample.yaml", testConfigPath, string(os.PathSeparator)))
+	config, err := GetYamlConfigManager(fmt.Sprintf("%s%sexample.yaml", testConfigPath, string(os.PathSeparator)))
 	require.Equal(t, nil, err)
 
 	// get config

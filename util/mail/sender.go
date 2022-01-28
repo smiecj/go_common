@@ -7,23 +7,35 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/smiecj/go_common/config"
 	"github.com/smiecj/go_common/errorcode"
 	"github.com/smiecj/go_common/util/log"
 )
 
+const (
+	// 邮件发送器初始化配置中，收件人中的默认分隔符（逗号）
+	receiverSplitor = ","
+	// 配置中心读取邮件发送配置，默认使用的space
+	// 可能会造成多个项目误共用配置的问题，在项目使用中，尽量通过配置文件路径区分不同的项目配置
+	mailDefaultConfigSpace = "mail"
+)
+
 var (
 	// map
-	mailSenderMap = make(map[MailSenderConf]Sender)
+	mailSenderMap = make(map[mailSenderInitConf]Sender)
 	// lock
 	mailSenderLock sync.RWMutex
 )
 
+// 当前: 封闭 MailSenderConf 外部不再传入
+
 // 邮件发送器配置定义
-type MailSenderConf struct {
-	Host   string
-	Port   int
-	Token  string
-	Sender string
+type mailSenderInitConf struct {
+	Host     string `yaml:"host"`
+	Port     int    `yaml:"port"`
+	Token    string `yaml:"token"`
+	Sender   string `yaml:"sender"`
+	Receiver string `yaml:"receiver"`
 }
 
 // 具体邮件发送配置定义
@@ -42,7 +54,7 @@ type Sender interface {
 
 // QQ邮箱 发送具体实现
 type mailSenderQQImpl struct {
-	conf *MailSenderConf
+	conf mailSenderInitConf
 }
 
 // 发送邮件具体配置 设置方法定义
@@ -103,7 +115,11 @@ func (impl mailSenderQQImpl) Send(setterArr ...mailSendConfSetter) error {
 	for _, setter := range setterArr {
 		setter(conf)
 	}
-	// SMTP 密码，不要提交到git 上
+	// default receiver use sender init conf
+	if len(conf.receiverArr) == 0 {
+		conf.receiverArr = strings.Split(strings.TrimSpace(impl.conf.Receiver), receiverSplitor)
+	}
+
 	auth := smtp.PlainAuth("", impl.conf.Sender, impl.conf.Token, impl.conf.Host)
 
 	contentType := "Content-Type: text/plain; charset=UTF-8"
@@ -120,28 +136,38 @@ func (impl mailSenderQQImpl) Send(setterArr ...mailSendConfSetter) error {
 }
 
 // 构建一个 QQ 邮件发送器
-func NewQQMailSender(conf MailSenderConf) Sender {
+func NewQQMailSender(configManager config.Manager) (Sender, error) {
 	var sender Sender
 	mailSenderLock.RLock()
-	sender = mailSenderMap[conf]
+	senderInitConf := mailSenderInitConf{}
+	configManager.Unmarshal(mailDefaultConfigSpace, &senderInitConf)
+	sender = mailSenderMap[senderInitConf]
 	mailSenderLock.RUnlock()
 
 	if nil != sender {
-		return sender
+		return sender, nil
 	}
 
 	mailSenderLock.Lock()
 	defer mailSenderLock.Unlock()
 
-	// mysql 连接能成功创建，并执行 SQL, 才算是创建成功
 	impl := new(mailSenderQQImpl)
-	if conf.Host == "" {
-		conf.Host = "smtp.qq.com"
+	if senderInitConf.Host == "" {
+		senderInitConf.Host = "smtp.qq.com"
 	}
-	if conf.Port == 0 {
-		conf.Port = 587
+	if senderInitConf.Port == 0 {
+		senderInitConf.Port = 587
 	}
-	impl.conf = &conf
-	mailSenderMap[conf] = impl
-	return impl
+
+	// token 和 发送者 不能为空
+	if senderInitConf.Token == "" {
+		return nil, errorcode.BuildErrorWithMsg(errorcode.SenderInitFailed, "token is empty")
+	}
+	if senderInitConf.Sender == "" {
+		return nil, errorcode.BuildErrorWithMsg(errorcode.SenderInitFailed, "sender is empty")
+	}
+
+	impl.conf = senderInitConf
+	mailSenderMap[senderInitConf] = impl
+	return impl, nil
 }

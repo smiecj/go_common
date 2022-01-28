@@ -1,5 +1,5 @@
 package errorcode
 
 const (
-	AlertMsgEmpty = "alert_101"
+	FileNotFound = "file_101"
 )

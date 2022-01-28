@@ -157,7 +157,7 @@ func (config *yamlManager) Update() error {
 }
 
 // 获取 yaml 配置中心单例
-func GetYamlConfig(filePath string) (Manager, error) {
+func GetYamlConfigManager(filePath string) (Manager, error) {
 	var manager Manager
 	yamlConfigMapLock.RLock()
 	if nil == yamlConfigMap {
@@ -178,7 +178,7 @@ func GetYamlConfig(filePath string) (Manager, error) {
 	yamlConfig.filePath = filePath
 	err := yamlConfig.init()
 	if nil != err {
-		log.Error("[config.GetYamlConfig] init yaml config failed: %s", err.Error())
+		log.Error("[config.GetYamlConfigManager] init yaml config failed: %s", err.Error())
 		return nil, err
 	}
 	yamlConfigMap[filePath] = yamlConfig
