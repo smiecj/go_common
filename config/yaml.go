@@ -138,7 +138,6 @@ func (config *yamlManager) Unmarshal(spaceName string, obj interface{}) error {
 	if nil != err {
 		return err
 	}
-
 	return space.Unmarshal(obj)
 }
 

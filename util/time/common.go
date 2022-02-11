@@ -11,11 +11,17 @@ import (
 const (
 	normalFormat = "2006-01-02 15:04:05"
 	dateFormat   = "2006-01-02"
+	monthFormat  = "2006-01"
 )
 
 // 获取当前时间戳
 func GetCurrentTimestamp() string {
 	return time.Now().Format(normalFormat)
+}
+
+// 获取当前日期
+func GetCurrentDate() string {
+	return time.Now().Format(dateFormat)
 }
 
 // 将指定时间戳和当前时间戳 做时间差值对比，当前时间 - 传入时间
@@ -56,4 +62,16 @@ func GetTimestampByUnixtime(unixtime string) (targetTimestamp string, err error)
 	targetTime := time.Unix(int64(unixtimeInt), 0)
 	targetTimestamp = targetTime.Format(normalFormat)
 	return
+}
+
+// 获取当前日期指定天数之后的日期
+func GetDateAfterDay(day int) string {
+	targetTime := time.Now().Add(time.Duration(day*24) * time.Hour)
+	return targetTime.Format(dateFormat)
+}
+
+// 获取当前日期指定天数之后的月份
+func GetMonthAfterDay(day int) string {
+	targetTime := time.Now().Add(time.Duration(day*24) * time.Hour)
+	return targetTime.Format(monthFormat)
 }

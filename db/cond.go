@@ -14,18 +14,28 @@ const (
 	conditionTypeOr     conditionType = "or"
 	conditionTypeAnd    conditionType = "and"
 
-	conditionMethodLike    conditionMethod = "like"
-	conditionMethodEqual   conditionMethod = "equal"
-	conditionMethodSmaller conditionMethod = "<"
-	conditionMethodBigger  conditionMethod = ">"
+	conditionMethodLike           conditionMethod = "like"
+	conditionMethodEqual          conditionMethod = "equal"
+	conditionMethodNotEqual       conditionMethod = "not equal"
+	conditionMethodIn             conditionMethod = "in"
+	conditionMethodNotIn          conditionMethod = "not in"
+	conditionMethodSmaller        conditionMethod = "<"
+	conditionMethodBigger         conditionMethod = ">"
+	conditionMethodSmallerOrEqual conditionMethod = "<="
+	conditionMethodBiggerOrEqual  conditionMethod = ">="
 )
 
 var (
 	methodToKeywordMap = map[string]string{
-		string(conditionMethodLike):    "%",
-		string(conditionMethodEqual):   "=",
-		string(conditionMethodSmaller): "<",
-		string(conditionMethodBigger):  ">",
+		string(conditionMethodLike):           "%",
+		string(conditionMethodEqual):          "=",
+		string(conditionMethodNotEqual):       "!=",
+		string(conditionMethodIn):             "IN",
+		string(conditionMethodNotIn):          "NOT IN",
+		string(conditionMethodSmaller):        "<",
+		string(conditionMethodBigger):         ">",
+		string(conditionMethodSmallerOrEqual): "<=",
+		string(conditionMethodBiggerOrEqual):  ">=",
 	}
 	keyWordToMethodMap = map[string]conditionMethod{
 		"%": conditionMethodLike,
@@ -54,7 +64,12 @@ func (arr whereArr) ToSQL() string {
 	for _, currentCond := range arr {
 		switch currentCond.Type {
 		case conditionTypeAssert:
-			buffer.WriteString(fmt.Sprintf("%s %s '%s'",
+			// fix-对in, not in 这种条件，value 前后不需要加上引号
+			condFormatStr := "%s %s '%s'"
+			if currentCond.Method == conditionMethodIn || currentCond.Method == conditionMethodNotIn {
+				condFormatStr = "%s %s %s"
+			}
+			buffer.WriteString(fmt.Sprintf(condFormatStr,
 				currentCond.Key, methodToKeywordMap[string(currentCond.Method)], currentCond.Value))
 		case conditionTypeAnd, conditionTypeOr:
 			buffer.WriteString(fmt.Sprintf(" %s ", currentCond.Type))

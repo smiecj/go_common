@@ -69,10 +69,11 @@ insertRet, err := localConnector.Insert(InsertSetSpace(dbName, tableName), Inser
 
 // query
 // search field
-SearchRet, err := localConnector.Search(SearchSetSpace(dbName, tableName))
+searchRet, err := localConnector.Search(SearchSetSpace(dbName, tableName))
 // search object
-SearchRet, err := localConnector.Search(SearchSetSpace(dbName, tableName), SearchSetObject(testStruct{}), SearchSetObjectArrType([]*testStruct{}))
+searchRet, err := localConnector.Search(SearchSetSpace(dbName, tableName), SearchSetObject(testStruct{}), SearchSetObjectArrType([]*testStruct{}))
 // notice: local file connector use reflect lib to unmarshal object everyline, so please use pointer array when set object array type
+actualObjectArr := searchRet.ObjectArr.([]*testStruct{})
 ```
 
 ### mysql (gorm)

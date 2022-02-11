@@ -27,8 +27,6 @@ var (
 	mailSenderLock sync.RWMutex
 )
 
-// 当前: 封闭 MailSenderConf 外部不再传入
-
 // 邮件发送器配置定义
 type mailSenderInitConf struct {
 	Host     string `yaml:"host"`
