@@ -208,12 +208,22 @@ metrics.(*PrometheusGauge).With(MetricsLabel{"name": "smiecj"}).Set(10)
 
 ## other common tool
 
-### time
+### time - format
 ```
 import "github.com/smiecj/go_common/util/time"
 
 // get current timestamp (format: 2006-01-02 15:04:05)
 time.GetCurrentTimestamp()
+```
+
+### time - fixed hour ticker
+```
+import "github.com/smiecj/go_common/util/time"
+
+// tick on 8 am everyday (not 8:00)
+ticker := time.NewFixHourTicker(8, time.SetFunc(func() error {dosomething...}))
+ticker.Start()
+// ticker.Stop()
 ```
 
 ### net

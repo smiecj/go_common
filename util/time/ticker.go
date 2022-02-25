@@ -18,30 +18,31 @@ const (
 
 // 调度器定义
 type Ticker interface {
-	Status() string
+	Status() TickerStatus
 	Start() error
 	Stop() error
+	Error() <-chan error
 }
 
 // 按小时调度器，每天只调度一次，在指定小时的时候调度
 // 需要获取 errorChan 中的数据，否则可能会导致阻塞
 type fixHourTicker struct {
-	ErrorChan chan error
+	errorChan chan error
 	ticker    *time.Ticker
 
 	tickFunc  func()
 	tickOnce  sync.Once
 	closeOnce sync.Once
 
-	conf   *fixHourTickerConf
+	conf   *tickerConf
 	status TickerStatus
 	// 状态信息，记录上次调度的日期
 	lastExecuteDate string
 	todayHasRun     bool
 }
 
-// 按小时调度器具体配置
-type fixHourTickerConf struct {
+// ticker 具体配置
+type tickerConf struct {
 	hour   int
 	f      func() error
 	ctx    context.Context
@@ -49,7 +50,7 @@ type fixHourTickerConf struct {
 	// timeout time.Duration
 }
 
-type fixHourTickerConfFunc func(*fixHourTickerConf)
+type tickerConfFunc func(*tickerConf)
 
 // 启动 fixed hour ticker
 func (ticker *fixHourTicker) Start() error {
@@ -74,10 +75,14 @@ func (ticker *fixHourTicker) Status() TickerStatus {
 	return ticker.status
 }
 
-// 当前: 实现指定小时调度的ticker
+// 获取 error chan
+func (ticker *fixHourTicker) Error() <-chan error {
+	return ticker.errorChan
+}
+
 // 后续: 可参考 https://github.com/mileusna/crontab 实现更完整的 crontab 定时调度器
-func NewFixHourTicker(confFuncArr ...fixHourTickerConfFunc) *fixHourTicker {
-	conf := new(fixHourTickerConf)
+func NewFixHourTicker(confFuncArr ...tickerConfFunc) *fixHourTicker {
+	conf := getTickerConf()
 	for _, currentConfFunc := range confFuncArr {
 		currentConfFunc(conf)
 	}
@@ -95,7 +100,7 @@ func NewFixHourTicker(confFuncArr ...fixHourTickerConfFunc) *fixHourTicker {
 					e := conf.f()
 					if nil != e {
 						log.Info("[FixHourTicker.tick] put error to chan")
-						hourTicker.ErrorChan <- e
+						hourTicker.errorChan <- e
 					}
 					log.Info("[FixHourTicker.tick] end")
 				} else if GetCurrentDate() != hourTicker.lastExecuteDate {
@@ -103,6 +108,7 @@ func NewFixHourTicker(confFuncArr ...fixHourTickerConfFunc) *fixHourTicker {
 				}
 			case <-conf.ctx.Done():
 				hourTicker.ticker.Stop()
+				close(hourTicker.errorChan)
 			}
 		}
 	}
@@ -111,8 +117,8 @@ func NewFixHourTicker(confFuncArr ...fixHourTickerConfFunc) *fixHourTicker {
 }
 
 // 设置定时调度的小时数，限制范围: 0~23
-func SetHour(hour int) fixHourTickerConfFunc {
-	return func(conf *fixHourTickerConf) {
+func SetHour(hour int) tickerConfFunc {
+	return func(conf *tickerConf) {
 		if hour >= 0 && hour < 24 {
 			conf.hour = hour
 		}
@@ -120,23 +126,30 @@ func SetHour(hour int) fixHourTickerConfFunc {
 }
 
 // 设置定时调度的方法
-func SetFunc(f func() error) fixHourTickerConfFunc {
-	return func(conf *fixHourTickerConf) {
+func SetFunc(f func() error) tickerConfFunc {
+	return func(conf *tickerConf) {
 		conf.f = f
 	}
 }
 
 // 设置定时调度的 context
-func SetContext(ctx context.Context) fixHourTickerConfFunc {
-	return func(conf *fixHourTickerConf) {
+func SetContext(ctx context.Context) tickerConfFunc {
+	return func(conf *tickerConf) {
 		conf.ctx, conf.cancel = context.WithCancel(ctx)
 	}
 }
 
-func getFixHourTicker(conf *fixHourTickerConf) *fixHourTicker {
+// 获取带有一些初始化配置的 定时调度配置
+func getTickerConf() *tickerConf {
+	conf := new(tickerConf)
+	conf.ctx = context.Background()
+	return conf
+}
+
+func getFixHourTicker(conf *tickerConf) *fixHourTicker {
 	hourTicker := fixHourTicker{}
-	hourTicker.ticker = time.NewTicker(30 * time.Minute)
-	hourTicker.ErrorChan = make(chan error)
+	hourTicker.ticker = time.NewTicker(1 * time.Minute)
+	hourTicker.errorChan = make(chan error)
 	hourTicker.conf = conf
 	hourTicker.status = StatusInit
 	hourTicker.todayHasRun = false

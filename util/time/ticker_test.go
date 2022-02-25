@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	tickerConfArr = []fixHourTickerConf{
+	tickerConfArr = []tickerConf{
 		{
 			hour: time.Now().Hour(),
 			f:    func() error { log.Info("hour ticker run"); return nil },

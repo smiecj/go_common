@@ -80,7 +80,8 @@ func (connector *mysqlConnector) Insert(funcArr ...RDBInsertConfigFunc) (ret Upd
 		}
 		dbRet = connector.db.Table(action.GetSpaceName()).Select(searchKeyArr).Create(toInsertArr)
 	} else {
-		return ret, errorcode.BuildErrorWithMsg(errorcode.DBParamInvalid, "Insert failed: to insert data is empty")
+		log.Warn("[mysqlConnector.Insert] To insert data is empty")
+		return ret, nil
 	}
 
 	ret.AffectedRows, err = int(dbRet.RowsAffected), dbRet.Error
@@ -120,7 +121,8 @@ func (connector *mysqlConnector) Update(funcArr ...RDBUpdateConfigFunc) (ret Upd
 		}
 		dbRet = connector.db.Table(action.GetSpaceName()).Where(condition.WhereArr.ToSQL()).Select(searchKeyArr).Updates(objectArr[0])
 	} else {
-		return ret, errorcode.BuildErrorWithMsg(errorcode.DBParamInvalid, "Insert failed: to insert data is empty")
+		log.Warn("[mysqlConnector.Update] To update data is empty")
+		return ret, nil
 	}
 
 	ret.AffectedRows, err = int(dbRet.RowsAffected), dbRet.Error
@@ -173,7 +175,7 @@ func (connector *mysqlConnector) Search(funcArr ...RDBSearchConfigFunc) (ret Sea
 	dbRet := connector.db.Table(action.GetSpaceName()).
 		Select(keyArr).Where(condition.WhereArr.ToSQL()).Count(&count)
 	if nil != dbRet.Error {
-		log.Error("[mysqlConnector.Count] Count failed, table: %s, reason: %s", action.GetSpaceName(), err.Error())
+		log.Error("[mysqlConnector.Count] Count failed, table: %s, reason: %s", action.GetSpaceName(), dbRet.Error.Error())
 		return ret, dbRet.Error
 	} else {
 		ret.Total = int(count)

@@ -206,12 +206,22 @@ metrics.(*PrometheusGauge).With(MetricsLabel{"name": "smiecj"}).Set(10)
 
 ## 其他公共工具方法
 
-### time
+### time - 格式化相关工具方法
 ```
 import "github.com/smiecj/go_common/util/time"
 
 // 获取当前时间戳 (格式: 2006-01-02 15:04:05)
 time.GetCurrentTimestamp()
+```
+
+### time - 指定小时调度
+```
+import "github.com/smiecj/go_common/util/time"
+
+// 每天早上8点调度
+ticker := time.NewFixHourTicker(8, time.SetFunc(func() error {dosomething...}))
+ticker.Start()
+// ticker.Stop()
 ```
 
 ### net
