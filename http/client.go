@@ -1,6 +1,7 @@
 package http
 
 import (
+	"context"
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
@@ -40,6 +41,8 @@ type Client interface {
 
 // 请求体
 type Request struct {
+	ctx    context.Context
+	cancel context.CancelFunc
 	url    string
 	header map[string]string
 	param  map[string]string
@@ -51,6 +54,7 @@ type Request struct {
 // 注意对map 数据结构的初始化
 func buildRequest() *Request {
 	req := new(Request)
+	req.ctx, req.cancel = context.Background(), func() {}
 	req.header = make(map[string]string)
 	req.param = make(map[string]string)
 	return req
@@ -100,6 +104,13 @@ type Response struct {
 
 // 配置请求函数
 type ConfigRequestFunc func(*Request)
+
+// 配置 timeout context
+func Timeout(timeout time.Duration) func(*Request) {
+	return func(request *Request) {
+		request.ctx, request.cancel = context.WithTimeout(request.ctx, timeout)
+	}
+}
 
 // 配置url
 func Url(url string) func(*Request) {
@@ -179,6 +190,7 @@ func GetHTTPClient() Client {
 // 发起http请求
 func (client *httpClient) Do(configFuncArr ...ConfigRequestFunc) (rsp *Response, err error) {
 	request := buildRequest()
+	defer request.cancel()
 	rsp = new(Response)
 	for _, currentConfigFunc := range configFuncArr {
 		currentConfigFunc(request)
@@ -194,7 +206,7 @@ func (client *httpClient) Do(configFuncArr ...ConfigRequestFunc) (rsp *Response,
 }
 
 func (client *httpClient) commonSendRequest(request *Request, response *Response) (err error) {
-	req, err := http.NewRequest(request.method, request.url, strings.NewReader(request.body))
+	req, err := http.NewRequestWithContext(request.ctx, request.method, request.url, strings.NewReader(request.body))
 	for key, value := range request.header {
 		req.Header.Set(key, value)
 	}

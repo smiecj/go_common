@@ -31,7 +31,7 @@ func CompareTimestampWithNow(timestamp string) (dur time.Duration, err error) {
 	if nil != err {
 		err = errorcode.BuildErrorWithMsg(errorcode.ParseTimeFailed, err.Error())
 	} else {
-		dur = time.Now().Sub(inputTime)
+		dur = time.Since(inputTime)
 	}
 	return
 }

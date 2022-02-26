@@ -14,6 +14,8 @@ const (
 	StatusInit    TickerStatus = "init"
 	StatusRunning TickerStatus = "running"
 	StatusStop    TickerStatus = "stop"
+
+	fixedHourTickerCheckDuration = 10 * time.Minute
 )
 
 // 调度器定义
@@ -148,7 +150,7 @@ func getTickerConf() *tickerConf {
 
 func getFixHourTicker(conf *tickerConf) *fixHourTicker {
 	hourTicker := fixHourTicker{}
-	hourTicker.ticker = time.NewTicker(1 * time.Minute)
+	hourTicker.ticker = time.NewTicker(fixedHourTickerCheckDuration)
 	hourTicker.errorChan = make(chan error)
 	hourTicker.conf = conf
 	hourTicker.status = StatusInit
