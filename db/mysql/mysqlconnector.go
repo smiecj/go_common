@@ -5,7 +5,9 @@ import (
 	"reflect"
 	"strings"
 	"sync"
+	"time"
 
+	"github.com/smiecj/go_common/config"
 	. "github.com/smiecj/go_common/db"
 	"github.com/smiecj/go_common/errorcode"
 	"github.com/smiecj/go_common/util/log"
@@ -17,6 +19,13 @@ import (
 const (
 	// distinct 用: 字段分隔符
 	distinctSeparator = ";;;"
+
+	// 配置中心中存放的 mysql 配置默认的space
+	// 后续: 最好是可以由用户来控制 space 存放的位置
+	mysqlConfigDefaultSpace = "mysql"
+
+	// 默认配置: 最大空闲连接数
+	defaultMaxIdleConn = 10
 )
 
 var (
@@ -26,12 +35,27 @@ var (
 
 // mysql 连接配置
 type MySQLConnectOption struct {
-	Host     string
-	Port     int
-	User     string
-	Password string
-	Database string
-	IsSSL    bool
+	Host        string `yaml:"host"`
+	Port        int    `yaml:"port"`
+	User        string `yaml:"user"`
+	Password    string `yaml:"password"`
+	Database    string `yaml:"database"`
+	IsSSL       bool   `yaml:"is_ssl"`
+	MaxLifeTime int    `yaml:"max_life_time"`
+	MaxIdleTime int    `yaml:"max_idle_time"`
+	MaxIdleConn int    `yaml:"max_idle_conn"`
+}
+
+// 对mysql 配置进行检查，不合理的配置配默认值
+func (option *MySQLConnectOption) check() {
+	if option.MaxLifeTime == 0 && option.MaxIdleTime == 0 {
+		option.MaxLifeTime = 5 * int(time.Minute)
+		option.MaxIdleTime = option.MaxLifeTime
+	}
+
+	if option.MaxIdleConn == 0 {
+		option.MaxIdleConn = defaultMaxIdleConn
+	}
 }
 
 // mysql 存储
@@ -294,12 +318,18 @@ func (connector *mysqlConnector) Distinct(funcArr ...RDBSearchConfigFunc) (ret S
 }
 
 // 获取 mysql 连接器
-func GetMySQLConnector(option MySQLConnectOption) (RDBConnector, error) {
+func GetMySQLConnector(configManager config.Manager) (RDBConnector, error) {
 	var connector RDBConnector
 	mysqlConnectorLock.RLock()
+
+	option := MySQLConnectOption{}
+	configManager.Unmarshal(mysqlConfigDefaultSpace, &option)
+	option.check()
+
 	if nil == mysqlConnectorMap {
 		mysqlConnectorMap = make(map[MySQLConnectOption]RDBConnector)
 	}
+
 	connector = mysqlConnectorMap[option]
 	mysqlConnectorLock.RUnlock()
 
@@ -322,6 +352,12 @@ func GetMySQLConnector(option MySQLConnectOption) (RDBConnector, error) {
 		log.Error("[GetMySQLConnector] Get mysql connector failed, please check config: %s, err: %s", connectStr, err.Error())
 		return nil, errorcode.BuildErrorWithMsg(errorcode.DBConnectFailed, err.Error())
 	}
+
+	connDB, _ := db.DB()
+	connDB.SetMaxIdleConns(option.MaxIdleConn)
+	connDB.SetConnMaxIdleTime(time.Second * time.Duration(option.MaxIdleTime))
+	connDB.SetConnMaxLifetime(time.Second * time.Duration(option.MaxLifeTime))
+
 	err = db.Exec("SELECT 1;").Error
 	if nil != err {
 		log.Error("[GetMySQLConnector] Exec mysql check sql failed, please check config: %s, err: %s", connectStr, err.Error())

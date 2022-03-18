@@ -75,7 +75,18 @@ SearchRet, err := localConnector.Search(SearchSetSpace(dbName, tableName), Searc
 
 ### mysql (gorm)
 ```
-connector, err := GetMySQLConnector(MySQLConnectOption{Host: host, Port: port, User: user, Password: password})
+// 配置
+mysql:
+  host: localhost
+  port: 3306
+  user: root
+  password: pwd
+  max_life_time: 300
+  max_idle_time: 300  
+
+// 初始化
+configManager, _ := config.GetYamlConfigManager(config_path)
+connector, err := GetMySQLConnector(configManager)
 
 // 存入数据
 insertRet, err := connector.Insert(InsertSetSpace("db_name", "table_name"), 

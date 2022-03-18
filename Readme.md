@@ -78,7 +78,18 @@ actualObjectArr := searchRet.ObjectArr.([]*testStruct{})
 
 ### mysql (gorm)
 ```
-connector, err := GetMySQLConnector(MySQLConnectOption{Host: host, Port: port, User: user, Password: password})
+// config
+mysql:
+  host: localhost
+  port: 3306
+  user: root
+  password: pwd
+  max_life_time: 300
+  max_idle_time: 300  
+
+// init
+configManager, _ := config.GetYamlConfigManager(config_path)
+connector, err := GetMySQLConnector(configManager)
 
 // store
 insertRet, err := connector.Insert(InsertSetSpace("db_name", "table_name"), 

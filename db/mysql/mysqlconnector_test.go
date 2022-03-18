@@ -3,16 +3,12 @@ package mysql
 import (
 	"testing"
 
+	"github.com/smiecj/go_common/config"
 	. "github.com/smiecj/go_common/db"
 	"github.com/stretchr/testify/require"
 )
 
 const (
-	testMySQLHost     = "test_host"
-	testMySQLPort     = 3306
-	testMySQLUser     = "test_user"
-	testMySQLPassword = "test_password"
-
 	testMySQLDBName    = "temp"
 	testMySQLTableName = "test_student"
 )
@@ -44,8 +40,9 @@ type testStudent struct {
 type studentSlice []testStudent
 
 func TestMySQLConnector(t *testing.T) {
-	connector, err := GetMySQLConnector(
-		MySQLConnectOption{Host: testMySQLHost, Port: testMySQLPort, Database: testMySQLDBName, User: testMySQLUser, Password: testMySQLPassword})
+	configManager, err := config.GetYamlConfigManager("/tmp/conf.yaml")
+	require.Empty(t, err)
+	connector, err := GetMySQLConnector(configManager)
 	require.Empty(t, err)
 
 	// insert
