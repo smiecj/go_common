@@ -49,7 +49,7 @@ type MySQLConnectOption struct {
 // 对mysql 配置进行检查，不合理的配置配默认值
 func (option *MySQLConnectOption) check() {
 	if option.MaxLifeTime == 0 && option.MaxIdleTime == 0 {
-		option.MaxLifeTime = 5 * int(time.Minute)
+		option.MaxLifeTime = 5 * 60
 		option.MaxIdleTime = option.MaxLifeTime
 	}
 
