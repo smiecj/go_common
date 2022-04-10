@@ -252,3 +252,7 @@ isUsed := net.CheckLocalPortIsUsed(22)
 ## 告警收敛
 
 ## 告警设置默认接收人
+
+## db
+mysql connector 支持直接 select limit 1, 并直接通过对象来接收，而不是数组
+同样，插入也支持只插入一条数据

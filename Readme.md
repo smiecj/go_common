@@ -124,7 +124,7 @@ for _, currentField := range SearchRet.FieldArr {
 	}
 }
 
-// deletr
+// delete
 deleteRet, err := connector.Delete(DeleteSetSpace("db_name", "table_name"),
 		DeleteSetCondition("ID", "=", "1"))
 ```
@@ -247,10 +247,3 @@ ip, err := net.GetLocalIPV4()
 // check local port is used
 isUsed := net.CheckLocalPortIsUsed(22)
 ```
-
-# todo
-## RPC interface
-
-## alert convergence
-
-## alert set default receiver
