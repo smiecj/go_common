@@ -2,11 +2,11 @@
 ## 配置获取地址 + token (不体现在具体配置文件中) (比如: 从文件中获取 or 从 配置中心服务中获取)
 ### space (配置域，这里一般区分配置是做什么的，比如db: 表示连接数据资源)
 #### key-value (具体配置，一般是基本数据格式，如字符串 / 数字)
-db:
-  mysql_host: localhost
-  mysql_port: 3306
-  db_arr:
-    - school
+mysql:
+  host: localhost
+  port: 3306
+  user: root
+  password: root
 log:
   level: debug
 http:

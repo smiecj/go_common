@@ -2,9 +2,11 @@
 package time
 
 import (
+	"fmt"
 	"strconv"
 	"time"
 
+	"github.com/Lofanmi/chinese-calendar-golang/calendar"
 	"github.com/smiecj/go_common/errorcode"
 )
 
@@ -64,6 +66,12 @@ func GetTimestampByUnixtime(unixtime string) (targetTimestamp string, err error)
 	return
 }
 
+// 获取当前日期指定天数之前的日期
+func GetDateBeforeDay(day int) string {
+	targetTime := time.Now().Add(-time.Duration(day*24) * time.Hour)
+	return targetTime.Format(dateFormat)
+}
+
 // 获取当前日期指定天数之后的日期
 func GetDateAfterDay(day int) string {
 	targetTime := time.Now().Add(time.Duration(day*24) * time.Hour)
@@ -74,4 +82,13 @@ func GetDateAfterDay(day int) string {
 func GetMonthAfterDay(day int) string {
 	targetTime := time.Now().Add(time.Duration(day*24) * time.Hour)
 	return targetTime.Format(monthFormat)
+}
+
+// 获取指定天数之前的年、月、日（阴历）
+func GetLunarDateBeforeDay(day int) string {
+	targetTime := time.Now().Add(-time.Duration(day*24) * time.Hour)
+	lunarObj := calendar.BySolar(int64(targetTime.Year()), int64(targetTime.Month()), int64(targetTime.Day()),
+		00, 00, 00)
+	return fmt.Sprintf("%.4d-%.2d-%.2d", lunarObj.Lunar.GetYear(), lunarObj.Lunar.GetMonth(),
+		lunarObj.Lunar.GetDay())
 }

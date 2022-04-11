@@ -13,4 +13,4 @@ CREATE TABLE IF NOT EXISTS `t_lock` (
   KEY `time_index` (`update_time`),
   KEY `env_index` (`env`),
   UNIQUE(name)
-) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 AUTO_INCREMENT=1 COMMENT="保证集群条件下只有一个节点启动服务的乐观锁表";

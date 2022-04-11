@@ -258,6 +258,7 @@ func (connector *mysqlConnector) Count(funcArr ...RDBSearchConfigFunc) (ret Sear
 	dbRet := connector.db.Table(action.GetSpaceName()).Where(condition.WhereArr.ToSQL()).Count(&count)
 
 	ret.Total, err = int(count), dbRet.Error
+	ret.Len = ret.Total
 
 	if nil != err {
 		log.Error("[mysqlConnector.Count] Count failed, table: %s, reason: %s", action.GetSpaceName(), err.Error())

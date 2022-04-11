@@ -3,6 +3,7 @@ module github.com/smiecj/go_common
 go 1.16
 
 require (
+	github.com/Lofanmi/chinese-calendar-golang v0.0.0-20211214151323-ef5cb443e55e
 	github.com/apache/thrift v0.12.0 // indirect
 	github.com/bippio/go-impala v2.0.0+incompatible
 	github.com/json-iterator/go v1.1.12

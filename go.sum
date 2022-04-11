@@ -1,4 +1,6 @@
 cloud.google.com/go v0.34.0/go.mod h1:aQUYkXzVsufM+DwF1aE+0xfcU+56JwCaLick0ClmMTw=
+github.com/Lofanmi/chinese-calendar-golang v0.0.0-20211214151323-ef5cb443e55e h1:hWFKGrEqJI14SqwK7GShkaTV1NtQzMZFLFasITmH/LI=
+github.com/Lofanmi/chinese-calendar-golang v0.0.0-20211214151323-ef5cb443e55e/go.mod h1:nG6VxnU5//MJzjwFAYQzFcrVdm+3RGD8NwO9riziV8E=
 github.com/alecthomas/template v0.0.0-20160405071501-a0175ee3bccc/go.mod h1:LOuyumcjzFXgccqObfd/Ljyb9UuFJ6TxHnclSeseNhc=
 github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751/go.mod h1:LOuyumcjzFXgccqObfd/Ljyb9UuFJ6TxHnclSeseNhc=
 github.com/alecthomas/units v0.0.0-20151022065526-2efee857e7cf/go.mod h1:ybxpYRFXyAe+OPACYpWeL0wqObRcbAqCMya13uyzqw0=
