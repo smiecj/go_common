@@ -19,6 +19,7 @@ var (
 		testStudent{Name: "xiaohong", Grade: 2},
 		testStudent{Name: "xiaolin", Grade: 3},
 	}
+	testStudentSingle = testStudent{Name: "xiaozhang", Grade: 2}
 )
 
 // 测试mysql 操作的结构体
@@ -47,10 +48,16 @@ func TestMySQLConnector(t *testing.T) {
 
 	// insert
 	var testStudentSlice studentSlice
+	// insert batch
 	insertRet, err := connector.Insert(InsertSetSpace(testMySQLDBName, testMySQLTableName),
 		InsertAddObjectArr(testStudentArr), InsertSetObjectArrType(testStudentSlice))
 	require.Equal(t, nil, err)
 	require.Equal(t, len(testStudentArr), insertRet.AffectedRows)
+	// insert single
+	insertRet, err = connector.Insert(InsertSetSpace(testMySQLDBName, testMySQLTableName),
+		InsertSetObject(testStudentSingle))
+	require.Equal(t, nil, err)
+	require.Equal(t, 1, insertRet.AffectedRows)
 
 	// search
 	searchRet, err := connector.Search(SearchSetSpace(testMySQLDBName, testMySQLTableName),
@@ -84,7 +91,7 @@ func TestMySQLConnector(t *testing.T) {
 
 	// delete
 	deleteRet, err := connector.Delete(DeleteSetSpace(testMySQLDBName, testMySQLTableName),
-		DeleteSetCondition("name", "in", "('xiaoming', 'xiaohong', 'xiaolin')"), DeleteSetLimit(insertRet.AffectedRows))
+		DeleteSetCondition("name", "in", "('xiaoming', 'xiaohong', 'xiaolin', 'xiaozhang')"), DeleteSetLimit(insertRet.AffectedRows))
 	require.Equal(t, nil, err)
 	require.LessOrEqual(t, 1, deleteRet.AffectedRows)
 }

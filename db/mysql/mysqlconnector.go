@@ -72,11 +72,14 @@ func (connector *mysqlConnector) Insert(funcArr ...RDBInsertConfigFunc) (ret Upd
 		currentFunc(action)
 	}
 
-	// 判断是通过 object 插入 还是通过 直接指定key-value插入
+	// 插入 (按field，即 key-value map 插入 / 按 objectArr 批量插入)
 	var dbRet *gorm.DB
 	fieldArr := action.GetFieldArr()
 	objectArr := action.GetObjectArr()
-	if len(fieldArr) != 0 {
+	object := action.GetObject()
+	if nil != object {
+		dbRet = connector.db.Table(action.GetSpaceName()).Create(object)
+	} else if len(fieldArr) != 0 {
 		keyValueMapArr := make([]map[string]interface{}, 0)
 		for _, currentField := range fieldArr {
 			currentKeyValueMap := make(map[string]interface{}, 0)

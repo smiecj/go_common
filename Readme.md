@@ -96,6 +96,9 @@ insertRet, err := connector.Insert(InsertSetSpace("db_name", "table_name"),
     InsertAddObjectArr([]objectArr{obj1, obj2}), InsertSetObjectArrType([]object{}))
 // notice: you can set an empty slice when call InsertSetObjectArrType, SearchSetObjectArrType, when call reflect lib, the array will automatically init
 // notice: objectArrType is needed because []interface{} cannot be recognized in gorm
+// store one record
+insertRet, err := connector.Insert(InsertSetSpace("db_name", "table_name"),
+  InsertSetObject(object))
 
 // update
 UpdateRet, err := connector.Update(UpdateSetSpace("db_name", "table_name"),

@@ -89,6 +89,9 @@ func (field *field) String() string {
 // 库表属性定义（包括表字段）
 type rdbField struct {
 	space
+	// 插入/更新单条数据
+	object interface{}
+	// 批量插入/更新数据
 	objectArr []interface{}
 	// 插入的数组类型
 	objectArrType reflect.Type
@@ -97,12 +100,22 @@ type rdbField struct {
 	keyArr []string
 }
 
+// 设置单个 object
+func (rdbField *rdbField) setObject(object interface{}) {
+	rdbField.object = object
+}
+
+// 获取单个 object
+func (rdbField *rdbField) GetObject() interface{} {
+	return rdbField.object
+}
+
 // 获取所有的 field 字段
 func (rdbField *rdbField) GetFieldArr() []field {
 	return rdbField.fieldArr
 }
 
-// 获取所有的 object
+// 获取 object arr
 func (rdbField *rdbField) GetObjectArr() []interface{} {
 	return rdbField.objectArr
 }
@@ -180,6 +193,13 @@ func InsertAddField(field field) func(*rdbInsertAction) {
 func InsertAddFieldArr(field []field) func(*rdbInsertAction) {
 	return func(action *rdbInsertAction) {
 		action.rdbField.addFieldArr(field)
+	}
+}
+
+// 添加表数据: 添加单个结构体
+func InsertSetObject(object interface{}) func(*rdbInsertAction) {
+	return func(action *rdbInsertAction) {
+		action.rdbField.setObject(object)
 	}
 }
 

@@ -93,6 +93,9 @@ insertRet, err := connector.Insert(InsertSetSpace("db_name", "table_name"),
     InsertAddObjectArr([]objectArr{obj1, obj2}), InsertSetObjectArrType([]object{}))
 // 备注: 设置插入的数据数组格式的时候，直接插入一个大小为0 的数组即可，connector 内部逻辑会赋予 reflect.Type 格式
 // 为什么需要 objectArrType: 和gorm的机制有关系，[]interface{} 类型无法正常判断数组内成员的 gorm tag
+// 存入一条数据
+insertRet, err := connector.Insert(InsertSetSpace("db_name", "table_name"),
+  InsertSetObject(object))
 
 // 更新数据
 UpdateRet, err := connector.Update(UpdateSetSpace("db_name", "table_name"),
@@ -252,7 +255,3 @@ isUsed := net.CheckLocalPortIsUsed(22)
 ## 告警收敛
 
 ## 告警设置默认接收人
-
-## db
-mysql connector 支持直接 select limit 1, 并直接通过对象来接收，而不是数组
-同样，插入也支持只插入一条数据
