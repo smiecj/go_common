@@ -6,6 +6,11 @@ import (
 	"reflect"
 )
 
+const (
+	// 变更操作 最大 limit
+	maxModifyLimit = 10 ^ 7
+)
+
 // Relational data connector
 type RDBConnector interface {
 	Insert(...RDBInsertConfigFunc) (UpdateRet, error)
@@ -298,8 +303,10 @@ func (action *rdbDeleteAction) GetCondition() UpdateCondition {
 }
 
 // 创建一个删除配置
+// DB 保护: 默认最多查询 1kw 条数据
 func MakeRDBDeleteAction() *rdbDeleteAction {
 	action := new(rdbDeleteAction)
+	action.condition.Limit = maxModifyLimit
 	return action
 }
 
@@ -357,8 +364,10 @@ func (action *rdbSearchAction) GetObjectArrType() reflect.Type {
 }
 
 // 创建一个查询配置
+// DB 保护: 默认最多查询 1kw 条数据
 func MakeRDBSearchAction() *rdbSearchAction {
 	action := new(rdbSearchAction)
+	action.condition.Page.Limit = maxModifyLimit
 	return action
 }
 

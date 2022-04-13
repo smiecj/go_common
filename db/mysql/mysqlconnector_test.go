@@ -40,6 +40,7 @@ type testStudent struct {
 
 type studentSlice []testStudent
 
+// mysql db 连接器完整测试
 func TestMySQLConnector(t *testing.T) {
 	configManager, err := config.GetYamlConfigManager("/tmp/conf.yaml")
 	require.Empty(t, err)
@@ -64,10 +65,11 @@ func TestMySQLConnector(t *testing.T) {
 		SearchSetObjectArrType(testStudentSlice), SearchSetPageCondition(0, 10))
 	require.Equal(t, nil, err)
 	require.LessOrEqual(t, 1, searchRet.Len)
-	studentArr := searchRet.ObjectArr.(studentSlice)
-	require.GreaterOrEqual(t, len(studentArr), 3)
-	require.Equal(t, len(studentArr), searchRet.Len)
+	searchStudentArrRet := searchRet.ObjectArr.(studentSlice)
+	require.GreaterOrEqual(t, len(searchStudentArrRet), 3)
+	require.Equal(t, len(searchStudentArrRet), searchRet.Len)
 	require.GreaterOrEqual(t, searchRet.Total, searchRet.Len)
+	require.NotEmpty(t, searchStudentArrRet[0].Name)
 
 	// search min/max
 	searchRet, err = connector.Search(SearchSetSpace(testMySQLDBName, testMySQLTableName),

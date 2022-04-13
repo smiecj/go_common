@@ -32,9 +32,9 @@ type fixHourTicker struct {
 	errorChan chan error
 	ticker    *time.Ticker
 
-	tickFunc  func()
-	tickOnce  sync.Once
-	closeOnce sync.Once
+	tickLoopFunc func()
+	tickOnce     sync.Once
+	closeOnce    sync.Once
 
 	conf   *tickerConf
 	status TickerStatus
@@ -45,6 +45,7 @@ type fixHourTicker struct {
 
 // ticker 具体配置
 type tickerConf struct {
+	name   string
 	hour   int
 	f      func() error
 	ctx    context.Context
@@ -57,7 +58,7 @@ type tickerConfFunc func(*tickerConf)
 // 启动 fixed hour ticker
 func (ticker *fixHourTicker) Start() error {
 	ticker.tickOnce.Do(func() {
-		go ticker.tickFunc()
+		go ticker.tickLoopFunc()
 		ticker.status = StatusRunning
 	})
 	return nil
@@ -91,19 +92,30 @@ func NewFixHourTicker(confFuncArr ...tickerConfFunc) *fixHourTicker {
 	hourTicker := getFixHourTicker(conf)
 
 	// 开启协程 定时调度
-	hourTicker.tickFunc = func() {
+	hourTicker.tickLoopFunc = func() {
 		for {
 			select {
 			case <-hourTicker.ticker.C:
 				if time.Now().Hour() == conf.hour && !hourTicker.todayHasRun {
-					log.Info("[FixHourTicker.tick] start")
+					log.Info("[FixHourTicker.tick] start ")
 					hourTicker.todayHasRun = true
 					hourTicker.lastExecuteDate = GetCurrentDate()
-					e := conf.f()
-					if nil != e {
-						log.Info("[FixHourTicker.tick] put error to chan")
-						hourTicker.errorChan <- e
-					}
+					// 后续: 支持选择 同步 or 异步，目前是同步
+					jobFinishChan := make(chan int)
+					go func() {
+						defer func() {
+							if err := recover(); nil != err {
+								log.Warn("[FixHourTicker.tick] job exec throw err: %s", err)
+							}
+							jobFinishChan <- 0
+						}()
+						e := conf.f()
+						if nil != e {
+							log.Warn("[FixHourTicker.tick] put error to chan")
+							hourTicker.errorChan <- e
+						}
+					}()
+					<-jobFinishChan
 					log.Info("[FixHourTicker.tick] end")
 				} else if GetCurrentDate() != hourTicker.lastExecuteDate {
 					hourTicker.todayHasRun = false
