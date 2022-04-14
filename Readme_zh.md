@@ -230,10 +230,10 @@ time.GetCurrentTimestamp()
 
 ### time - 指定小时调度
 ```
-import "github.com/smiecj/go_common/util/time"
+import tickerutil "github.com/smiecj/go_common/util/time/ticker"
 
 // 每天早上8点调度
-ticker := time.NewFixHourTicker(8, time.SetFunc(func() error {dosomething...}))
+ticker := tickerutil.NewFixHourTicker(8, time.SetFunc(func() error {dosomething...}))
 ticker.Start()
 // ticker.Stop()
 ```

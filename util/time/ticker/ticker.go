@@ -1,4 +1,5 @@
-package time
+// package ticker 定时调度器
+package ticker
 
 import (
 	"context"
@@ -6,6 +7,7 @@ import (
 	"time"
 
 	"github.com/smiecj/go_common/util/log"
+	timeutil "github.com/smiecj/go_common/util/time"
 )
 
 type TickerStatus string
@@ -84,7 +86,7 @@ func (ticker *fixHourTicker) Error() <-chan error {
 }
 
 // 后续: 可参考 https://github.com/mileusna/crontab 实现更完整的 crontab 定时调度器
-func NewFixHourTicker(confFuncArr ...tickerConfFunc) *fixHourTicker {
+func NewFixHourTicker(confFuncArr ...tickerConfFunc) Ticker {
 	conf := getTickerConf()
 	for _, currentConfFunc := range confFuncArr {
 		currentConfFunc(conf)
@@ -99,15 +101,16 @@ func NewFixHourTicker(confFuncArr ...tickerConfFunc) *fixHourTicker {
 				if time.Now().Hour() == conf.hour && !hourTicker.todayHasRun {
 					log.Info("[FixHourTicker.tick] start ")
 					hourTicker.todayHasRun = true
-					hourTicker.lastExecuteDate = GetCurrentDate()
+					hourTicker.lastExecuteDate = timeutil.GetCurrentDate()
 					// 后续: 支持选择 同步 or 异步，目前是同步
-					jobFinishChan := make(chan int)
+					jobFinishChan := make(chan struct{})
 					go func() {
 						defer func() {
 							if err := recover(); nil != err {
 								log.Warn("[FixHourTicker.tick] job exec throw err: %s", err)
 							}
-							jobFinishChan <- 0
+							close(jobFinishChan)
+							// 当前: 测试是否能正常运行到这段
 						}()
 						e := conf.f()
 						if nil != e {
@@ -117,7 +120,7 @@ func NewFixHourTicker(confFuncArr ...tickerConfFunc) *fixHourTicker {
 					}()
 					<-jobFinishChan
 					log.Info("[FixHourTicker.tick] end")
-				} else if GetCurrentDate() != hourTicker.lastExecuteDate {
+				} else if timeutil.GetCurrentDate() != hourTicker.lastExecuteDate {
 					hourTicker.todayHasRun = false
 				}
 			case <-conf.ctx.Done():

@@ -232,10 +232,10 @@ time.GetCurrentTimestamp()
 
 ### time - fixed hour ticker
 ```
-import "github.com/smiecj/go_common/util/time"
+import tickerutil "github.com/smiecj/go_common/util/time/ticker"
 
 // tick on 8 am everyday (not 8:00)
-ticker := time.NewFixHourTicker(8, time.SetFunc(func() error {dosomething...}))
+ticker := tickerutil.NewFixHourTicker(8, time.SetFunc(func() error {dosomething...}))
 ticker.Start()
 // ticker.Stop()
 ```
