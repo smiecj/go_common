@@ -1,6 +1,7 @@
 package mysql
 
 import (
+	"flag"
 	"testing"
 
 	"github.com/smiecj/go_common/config"
@@ -20,6 +21,10 @@ var (
 		testStudent{Name: "xiaolin", Grade: 3},
 	}
 	testStudentSingle = testStudent{Name: "xiaozhang", Grade: 2}
+
+	anotherSchoolStudentName = "xiaobai"
+
+	configPath = flag.String("config", "/tmp/conf.yaml", "config path")
 )
 
 // 测试mysql 操作的结构体
@@ -42,7 +47,7 @@ type studentSlice []testStudent
 
 // mysql db 连接器完整测试
 func TestMySQLConnector(t *testing.T) {
-	configManager, err := config.GetYamlConfigManager("/tmp/conf.yaml")
+	configManager, err := config.GetYamlConfigManager(*configPath)
 	require.Empty(t, err)
 	connector, err := GetMySQLConnector(configManager)
 	require.Empty(t, err)
@@ -70,6 +75,14 @@ func TestMySQLConnector(t *testing.T) {
 	require.Equal(t, len(searchStudentArrRet), searchRet.Len)
 	require.GreaterOrEqual(t, searchRet.Total, searchRet.Len)
 	require.NotEmpty(t, searchStudentArrRet[0].Name)
+	// search not exist result
+	searchRet, err = connector.Search(SearchSetSpace(testMySQLDBName, testMySQLTableName),
+		SearchSetObjectArrType(testStudentSlice), SearchSetPageCondition(0, 10),
+		SearchSetCondition("name", "=", anotherSchoolStudentName))
+	require.Equal(t, nil, err)
+	require.LessOrEqual(t, 0, searchRet.Len)
+	_, isConvertSuccess := searchRet.ObjectArr.(studentSlice)
+	require.True(t, isConvertSuccess)
 
 	// search min/max
 	searchRet, err = connector.Search(SearchSetSpace(testMySQLDBName, testMySQLTableName),

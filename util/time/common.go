@@ -11,9 +11,10 @@ import (
 )
 
 const (
-	normalFormat = "2006-01-02 15:04:05"
-	dateFormat   = "2006-01-02"
-	monthFormat  = "2006-01"
+	normalFormat    = "2006-01-02 15:04:05"
+	dateFormat      = "2006-01-02"
+	monthFormat     = "2006-01"
+	shortDateFormat = "01-02"
 )
 
 // 获取当前时间戳
@@ -72,6 +73,12 @@ func GetDateBeforeDay(day int) string {
 	return targetTime.Format(dateFormat)
 }
 
+// 获取当前日期指定天数之后的短日期
+func GetShortDateAfterDay(day int) string {
+	targetTime := time.Now().Add(time.Duration(day*24) * time.Hour)
+	return targetTime.Format(dateFormat)
+}
+
 // 获取当前日期指定天数之后的日期
 func GetDateAfterDay(day int) string {
 	targetTime := time.Now().Add(time.Duration(day*24) * time.Hour)
@@ -84,11 +91,19 @@ func GetMonthAfterDay(day int) string {
 	return targetTime.Format(monthFormat)
 }
 
-// 获取指定天数之前的年、月、日（阴历）
+// 获取指定天数之前的日期（阴历）
 func GetLunarDateBeforeDay(day int) string {
 	targetTime := time.Now().Add(-time.Duration(day*24) * time.Hour)
 	lunarObj := calendar.BySolar(int64(targetTime.Year()), int64(targetTime.Month()), int64(targetTime.Day()),
 		00, 00, 00)
 	return fmt.Sprintf("%.4d-%.2d-%.2d", lunarObj.Lunar.GetYear(), lunarObj.Lunar.GetMonth(),
 		lunarObj.Lunar.GetDay())
+}
+
+// 获取指定天数之后的短日期（阴历）
+func GetShortLunarDateAfterDay(day int) string {
+	targetTime := time.Now().Add(time.Duration(day*24) * time.Hour)
+	lunarObj := calendar.BySolar(int64(targetTime.Year()), int64(targetTime.Month()), int64(targetTime.Day()),
+		00, 00, 00)
+	return fmt.Sprintf("%.2d-%.2d", lunarObj.Lunar.GetMonth(), lunarObj.Lunar.GetDay())
 }

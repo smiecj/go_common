@@ -17,7 +17,7 @@ const (
 	StatusRunning TickerStatus = "running"
 	StatusStop    TickerStatus = "stop"
 
-	fixedHourTickerCheckDuration = 10 * time.Minute
+	fixedHourTickerCheckDuration = 5 * time.Minute
 )
 
 // 调度器定义
@@ -110,7 +110,6 @@ func NewFixHourTicker(confFuncArr ...tickerConfFunc) Ticker {
 								log.Warn("[FixHourTicker.tick] job exec throw err: %s", err)
 							}
 							close(jobFinishChan)
-							// 当前: 测试是否能正常运行到这段
 						}()
 						e := conf.f()
 						if nil != e {
