@@ -38,11 +38,12 @@ type mailSenderInitConf struct {
 
 // 具体邮件发送配置定义
 type mailSendConf struct {
-	title       string
-	receiverArr []string
-	ccArr       []string
-	content     string
-	nickName    string
+	title           string
+	receiverArr     []string
+	ccArr           []string
+	content         string
+	nickName        string
+	isSendSeparatly bool
 }
 
 // 邮件发送结构体定义
@@ -107,6 +108,15 @@ func SetNickName(nickName string) func(*mailSendConf) {
 	}
 }
 
+// 设定在发送给多个收件人的时候分开发送
+// 避免不相关的收件人都看到信息
+// 后续: 可以考虑通过 hook 钩子的方式，配置不同的发送通道
+func SetSendSeparatly() func(*mailSendConf) {
+	return func(conf *mailSendConf) {
+		conf.isSendSeparatly = true
+	}
+}
+
 // 发送邮件接口实现
 func (impl mailSenderQQImpl) Send(setterArr ...mailSendConfSetter) error {
 	conf := new(mailSendConf)
@@ -118,18 +128,32 @@ func (impl mailSenderQQImpl) Send(setterArr ...mailSendConfSetter) error {
 		conf.receiverArr = strings.Split(strings.TrimSpace(impl.conf.Receiver), receiverSplitor)
 	}
 
+	if conf.isSendSeparatly {
+		for _, currentReceiver := range conf.receiverArr {
+			err := impl.send(conf, []string{currentReceiver})
+			if nil != err {
+				return err
+			}
+		}
+	} else {
+		return impl.send(conf, conf.receiverArr)
+	}
+
+	return nil
+}
+
+// 发送QQ邮箱，调用 smtp 接口逻辑
+func (impl mailSenderQQImpl) send(conf *mailSendConf, receiverArr []string) error {
 	auth := smtp.PlainAuth("", impl.conf.Sender, impl.conf.Token, impl.conf.Host)
-
 	contentType := "Content-Type: text/plain; charset=UTF-8"
-
-	msg := []byte("To: " + strings.Join(conf.receiverArr, ",") + "\r\nFrom: " + conf.nickName +
+	msg := []byte("To: " + strings.Join(receiverArr, ",") + "\r\nFrom: " + conf.nickName +
 		"<" + impl.conf.Sender + ">\r\nSubject: " + conf.title + "\r\n" + contentType + "\r\n\r\n" + conf.content)
-	err := smtp.SendMail(fmt.Sprintf("%s:%d", impl.conf.Host, impl.conf.Port), auth, impl.conf.Sender, conf.receiverArr, msg)
+	err := smtp.SendMail(fmt.Sprintf("%s:%d", impl.conf.Host, impl.conf.Port), auth, impl.conf.Sender, receiverArr, msg)
 	if err != nil {
 		log.Error("[mailSenderQQImpl.SendMail] send mail failed: %s", err.Error())
 		return errorcode.BuildErrorWithMsg(errorcode.SendMailFailed, err.Error())
 	}
-	log.Info("[mailSenderQQImpl.SendMail] send mail success, sender: %s", impl.conf.Sender)
+	log.Info("[mailSenderQQImpl.SendMail] send mail success, sender: %s, receiver: %v", impl.conf.Sender, receiverArr)
 	return nil
 }
 
