@@ -81,7 +81,7 @@ func GetTimestampByUnixtime(unixtime string) (targetTimestamp string, err error)
 
 // 获取指定日期的星期数
 func GetWeekDayByDate(date string) (time.Weekday, error) {
-	t, err := time.Parse(normalFormat, date)
+	t, err := time.Parse(dateFormat, date)
 	if nil != err {
 		return 0, err
 	}
@@ -90,7 +90,7 @@ func GetWeekDayByDate(date string) (time.Weekday, error) {
 
 // 获取指定日期的星期数（中文）
 func GetWeekDayStringByDate(date string) (string, error) {
-	t, err := time.Parse(normalFormat, date)
+	t, err := time.Parse(dateFormat, date)
 	if nil != err {
 		return "", err
 	}
