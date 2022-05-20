@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/smiecj/go_common/errorcode"
 	"github.com/smiecj/go_common/util/log"
 	timeutil "github.com/smiecj/go_common/util/time"
 )
@@ -47,15 +48,17 @@ type fixHourTicker struct {
 
 // ticker 具体配置
 type tickerConf struct {
-	name   string
-	hour   int
-	f      func() error
-	ctx    context.Context
-	cancel context.CancelFunc
+	name          string
+	hour          int
+	f             func() error
+	ctx           context.Context
+	cancel        context.CancelFunc
+	isIgnoreError bool
 	// timeout time.Duration
+
 }
 
-type tickerConfFunc func(*tickerConf)
+type tickerConfFunc func(*tickerConf) error
 
 // 启动 fixed hour ticker
 func (ticker *fixHourTicker) Start() error {
@@ -89,7 +92,8 @@ func (ticker *fixHourTicker) Error() <-chan error {
 func NewFixHourTicker(confFuncArr ...tickerConfFunc) Ticker {
 	conf := getTickerConf()
 	for _, currentConfFunc := range confFuncArr {
-		currentConfFunc(conf)
+		// 暂时不会有致命错误，先不处理
+		_ = currentConfFunc(conf)
 	}
 	hourTicker := getFixHourTicker(conf)
 
@@ -99,7 +103,7 @@ func NewFixHourTicker(confFuncArr ...tickerConfFunc) Ticker {
 			select {
 			case <-hourTicker.ticker.C:
 				if time.Now().Hour() == conf.hour && !hourTicker.todayHasRun {
-					log.Info("[FixHourTicker.tick] start ")
+					log.Info("[FixHourTicker.tick] start")
 					hourTicker.todayHasRun = true
 					hourTicker.lastExecuteDate = timeutil.GetCurrentDate()
 					// 后续: 支持选择 同步 or 异步，目前是同步
@@ -112,7 +116,7 @@ func NewFixHourTicker(confFuncArr ...tickerConfFunc) Ticker {
 							close(jobFinishChan)
 						}()
 						e := conf.f()
-						if nil != e {
+						if nil != e && !conf.isIgnoreError {
 							log.Warn("[FixHourTicker.tick] put error to chan")
 							hourTicker.errorChan <- e
 						}
@@ -134,24 +138,38 @@ func NewFixHourTicker(confFuncArr ...tickerConfFunc) Ticker {
 
 // 设置定时调度的小时数，限制范围: 0~23
 func SetHour(hour int) tickerConfFunc {
-	return func(conf *tickerConf) {
+	return func(conf *tickerConf) error {
 		if hour >= 0 && hour < 24 {
 			conf.hour = hour
+		} else {
+			return errorcode.BuildError(errorcode.ServiceError)
 		}
+		return nil
 	}
 }
 
 // 设置定时调度的方法
 func SetFunc(f func() error) tickerConfFunc {
-	return func(conf *tickerConf) {
+	return func(conf *tickerConf) error {
 		conf.f = f
+		return nil
 	}
 }
 
 // 设置定时调度的 context
 func SetContext(ctx context.Context) tickerConfFunc {
-	return func(conf *tickerConf) {
+	return func(conf *tickerConf) error {
 		conf.ctx, conf.cancel = context.WithCancel(ctx)
+		return nil
+	}
+}
+
+// 设置忽略 error，这样调用方不再需要处理 Error() 返回的 chan
+// 后续: error chan 使用懒加载的方式，节省空间
+func SetIsIgnoreError(isIgnoreError bool) tickerConfFunc {
+	return func(conf *tickerConf) error {
+		conf.isIgnoreError = isIgnoreError
+		return nil
 	}
 }
 

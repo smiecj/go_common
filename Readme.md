@@ -234,9 +234,16 @@ time.GetCurrentTimestamp()
 ```
 import tickerutil "github.com/smiecj/go_common/util/time/ticker"
 
-// tick on 8 am everyday (not 8:00)
+// tick on 8 am everyday (between 8:00~9:00)
 ticker := tickerutil.NewFixHourTicker(8, time.SetFunc(func() error {dosomething...}))
 ticker.Start()
+// handle error chan
+// if you set ignore error true (ticker.SetIsIgnoreError), then you don't need to consume error chan
+go func() {
+  for e := range ticker.Error() {
+    log.Warn("[ticker] error: %s", e.Error())
+  }
+}()
 // ticker.Stop()
 ```
 
