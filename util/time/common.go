@@ -17,6 +17,18 @@ const (
 	shortDateFormat = "01-02"
 )
 
+var (
+	weekDayToChineseMap = map[time.Weekday]string{
+		time.Monday:    "一",
+		time.Tuesday:   "二",
+		time.Wednesday: "三",
+		time.Thursday:  "四",
+		time.Friday:    "五",
+		time.Saturday:  "六",
+		time.Sunday:    "日",
+	}
+)
+
 // 获取当前时间戳
 func GetCurrentTimestamp() string {
 	return time.Now().Format(normalFormat)
@@ -65,6 +77,24 @@ func GetTimestampByUnixtime(unixtime string) (targetTimestamp string, err error)
 	targetTime := time.Unix(int64(unixtimeInt), 0)
 	targetTimestamp = targetTime.Format(normalFormat)
 	return
+}
+
+// 获取指定日期的星期数
+func GetWeekDayByDate(date string) (time.Weekday, error) {
+	t, err := time.Parse(dateFormat, date)
+	if nil != err {
+		return 0, err
+	}
+	return t.Weekday(), nil
+}
+
+// 获取指定日期的星期数（中文）
+func GetWeekDayStringByDate(date string) (string, error) {
+	t, err := time.Parse(dateFormat, date)
+	if nil != err {
+		return "", err
+	}
+	return weekDayToChineseMap[t.Weekday()], nil
 }
 
 // 获取当前日期指定天数之前的日期

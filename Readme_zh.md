@@ -232,9 +232,16 @@ time.GetCurrentTimestamp()
 ```
 import tickerutil "github.com/smiecj/go_common/util/time/ticker"
 
-// 每天早上8点调度
+// 每天早上 8点 调度（会在 8:00~9:00 的某一时间调度）
 ticker := tickerutil.NewFixHourTicker(8, time.SetFunc(func() error {dosomething...}))
 ticker.Start()
+// 处理错误流
+// 如果设置了不需要处理错误 (ticker.SetIsIgnoreError), 则可以忽略下面的逻辑
+go func() {
+  for e := range ticker.Error() {
+    log.Warn("[ticker] error: %s", e.Error())
+  }
+}()
 // ticker.Stop()
 ```
 
