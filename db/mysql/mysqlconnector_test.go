@@ -10,8 +10,9 @@ import (
 )
 
 const (
-	testMySQLDBName    = "temp"
-	testMySQLTableName = "test_student"
+	testMySQLDBName          = "temp"
+	testMySQLTableName       = "test_student"
+	testMySQLBackupTableName = "test_student_bak"
 )
 
 var (
@@ -36,6 +37,8 @@ CREATE TABLE `temp`.`test_student` (
    PRIMARY KEY (`id`),
   KEY `name_index` (`name`)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4;
+CREATE TABLE `temp`.`test_student_bak` (
+  ......)
 INSERT INTO temp.test_student(name, grade) VALUES('xiaoming', 1), ('xiaohong', 2), ('xiaolin', 3);
 */
 type testStudent struct {
@@ -104,9 +107,20 @@ func TestMySQLConnector(t *testing.T) {
 	require.Equal(t, nil, err)
 	require.LessOrEqual(t, 1, UpdateRet.AffectedRows)
 
+	// backup
+	backupRet, err := connector.Backup(BackupSetSourceSpace(testMySQLDBName, testMySQLTableName),
+		BackupSetTargetSpace(testMySQLDBName, testMySQLBackupTableName),
+		BackupSetCondition("name", "in", "('xiaoming', 'xiaohong', 'xiaolin', 'xiaozhang')"))
+	require.Equal(t, nil, err)
+	require.LessOrEqual(t, 1, backupRet.AffectedRows)
+
 	// delete
 	deleteRet, err := connector.Delete(DeleteSetSpace(testMySQLDBName, testMySQLTableName),
-		DeleteSetCondition("name", "in", "('xiaoming', 'xiaohong', 'xiaolin', 'xiaozhang')"), DeleteSetLimit(insertRet.AffectedRows))
+		DeleteSetCondition("name", "in", "('xiaoming', 'xiaohong', 'xiaolin', 'xiaozhang')"))
 	require.Equal(t, nil, err)
 	require.LessOrEqual(t, 1, deleteRet.AffectedRows)
+	deleteRet, err = connector.Delete(DeleteSetSpace(testMySQLDBName, testMySQLBackupTableName),
+		DeleteSetLimit(backupRet.AffectedRows))
+	require.Equal(t, nil, err)
+	require.Equal(t, backupRet.AffectedRows, deleteRet.AffectedRows)
 }

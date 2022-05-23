@@ -49,6 +49,11 @@ func (connector *impalaConnector) Delete(funcArr ...RDBDeleteConfigFunc) (ret Up
 	return ret, errorcode.BuildErrorWithMsg(errorcode.NotImplement, "[impalaConnector.Delete] not implement")
 }
 
+// 备份: 暂不实现
+func (connector *impalaConnector) Backup(funcArr ...RDBBackupConfigFunc) (ret UpdateRet, err error) {
+	return ret, errorcode.BuildErrorWithMsg(errorcode.NotImplement, "[impalaConnector.Backup] not implement")
+}
+
 // 查询: 暂不实现
 func (connector *impalaConnector) Search(funcArr ...RDBSearchConfigFunc) (ret SearchRet, err error) {
 	return ret, errorcode.BuildErrorWithMsg(errorcode.NotImplement, "[impalaConnector.Search] not implement")

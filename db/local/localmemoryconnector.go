@@ -84,6 +84,11 @@ func (connector *localMemoryConnector) Delete(funcArr ...RDBDeleteConfigFunc) (U
 	}
 }
 
+// 备份数据
+func (connector *localMemoryConnector) Backup(funcArr ...RDBBackupConfigFunc) (ret UpdateRet, err error) {
+	return ret, errorcode.BuildErrorWithMsg(errorcode.NotImplement, "[localMemoryConnector.Backup] not implement")
+}
+
 // 本地存储: 查询数据
 func (connector *localMemoryConnector) Search(funcArr ...RDBSearchConfigFunc) (ret SearchRet, err error) {
 	action := MakeRDBSearchAction()
