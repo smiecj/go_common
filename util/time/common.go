@@ -88,6 +88,15 @@ func GetWeekDayByDate(date string) (time.Weekday, error) {
 	return t.Weekday(), nil
 }
 
+// 获取指定日期的年份数
+func GetYearByDate(date string) (int, error) {
+	t, err := time.Parse(dateFormat, date)
+	if nil != err {
+		return 0, err
+	}
+	return t.Year(), nil
+}
+
 // 获取指定日期的星期数（中文）
 func GetWeekDayStringByDate(date string) (string, error) {
 	t, err := time.Parse(dateFormat, date)

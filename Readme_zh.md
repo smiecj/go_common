@@ -267,3 +267,5 @@ isUsed := net.CheckLocalPortIsUsed(22)
 ## 告警收敛
 
 ## 告警设置默认接收人
+
+## mysql 数据操作，超过指定数据量自动分批（防止一次性删除/插入过多数据）
