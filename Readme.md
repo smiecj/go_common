@@ -127,6 +127,10 @@ for _, currentField := range SearchRet.FieldArr {
 	}
 }
 
+// backup
+backupRet, err := connector.Backup(BackupSetSourceSpace("db_name", "source_table_name"),
+    BackupSetTargetSpace("db_name", "target_table_name"))
+
 // delete
 deleteRet, err := connector.Delete(DeleteSetSpace("db_name", "table_name"),
 		DeleteSetCondition("ID", "=", "1"))

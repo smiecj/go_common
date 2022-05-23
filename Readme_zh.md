@@ -124,6 +124,10 @@ for _, currentField := range SearchRet.FieldArr {
 	}
 }
 
+// 备份数据
+backupRet, err := connector.Backup(BackupSetSourceSpace("db_name", "source_table_name"),
+    BackupSetTargetSpace("db_name", "target_table_name"))
+
 // 删除数据
 deleteRet, err := connector.Delete(DeleteSetSpace("db_name", "table_name"),
 		DeleteSetCondition("ID", "=", "1"))
@@ -263,3 +267,5 @@ isUsed := net.CheckLocalPortIsUsed(22)
 ## 告警收敛
 
 ## 告警设置默认接收人
+
+## mysql 数据操作，超过指定数据量自动分批（防止一次性删除/插入过多数据）

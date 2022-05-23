@@ -124,6 +124,11 @@ func (connector *localFileConnector) Delete(funcArr ...RDBDeleteConfigFunc) (ret
 	return
 }
 
+// 备份数据
+func (connector *localFileConnector) Backup(funcArr ...RDBBackupConfigFunc) (ret UpdateRet, err error) {
+	return ret, errorcode.BuildErrorWithMsg(errorcode.NotImplement, "[localFileConnector.Backup] not implement")
+}
+
 // 查询数据
 func (connector *localFileConnector) Search(funcArr ...RDBSearchConfigFunc) (ret SearchRet, err error) {
 	action := MakeRDBSearchAction()

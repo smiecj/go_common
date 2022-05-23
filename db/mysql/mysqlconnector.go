@@ -169,20 +169,37 @@ func (connector *mysqlConnector) Delete(funcArr ...RDBDeleteConfigFunc) (ret Upd
 		currentFunc(action)
 	}
 
-	condition := action.GetCondition()
-	limitCondition := ""
-	if condition.Limit != 0 {
-		limitCondition = fmt.Sprintf("limit %d", condition.Limit)
-	}
-
-	dbRet := connector.db.Exec(fmt.Sprintf("DELETE FROM %s WHERE %s %s",
-		action.GetSpaceName(), condition.WhereArr.ToSQL(), limitCondition))
+	updateCondition := action.GetCondition()
+	dbRet := connector.db.Exec(fmt.Sprintf("DELETE FROM %s %s %s",
+		action.GetSpaceName(), updateCondition.GetUpdateCondition(), updateCondition.GetLimitCondition()))
 	ret.AffectedRows, err = int(dbRet.RowsAffected), dbRet.Error
 
 	if nil != err {
 		log.Error("[mysqlConnector.Delete] Delete failed, table: %s, reason: %s", action.GetSpaceName(), err.Error())
 	} else {
 		log.Info("[mysqlConnector.Delete] Delete success: %s, update rows: %d", action.GetSpaceName(), ret.AffectedRows)
+	}
+	return
+}
+
+// mysql: 备份数据
+func (connector *mysqlConnector) Backup(funcArr ...RDBBackupConfigFunc) (ret UpdateRet, err error) {
+	action := MakeRDBBackupAction()
+	for _, currentFunc := range funcArr {
+		currentFunc(action)
+	}
+
+	// 备份
+	// todo: 支持备份选择指定字段
+	// todo: 考虑到需要format 的字段过多，可以考虑 where、order、limit 部分的条件都统一放到一个方法中去封装
+	dbRet := connector.db.Exec(fmt.Sprintf("INSERT INTO %s SELECT * FROM %s %s %s",
+		action.GetTargetSpaceName(), action.GetSourceSpaceName(), action.GetCondition().GetUpdateCondition(), action.GetCondition().GetLimitCondition()))
+	ret.AffectedRows, err = int(dbRet.RowsAffected), dbRet.Error
+
+	if nil != err {
+		log.Error("[mysqlConnector.Backup] Backup failed, table: %s -> %s, reason: %s", action.GetSourceSpaceName(), action.GetTargetSpaceName(), err.Error())
+	} else {
+		log.Info("[mysqlConnector.Backup] Backup success: %s -> %s, update rows: %d", action.GetSourceSpaceName(), action.GetTargetSpaceName(), ret.AffectedRows)
 	}
 	return
 }

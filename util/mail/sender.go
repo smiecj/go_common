@@ -29,21 +29,21 @@ var (
 
 // 邮件发送器配置定义
 type mailSenderInitConf struct {
-	Host     string `yaml:"host"`
-	Port     int    `yaml:"port"`
-	Token    string `yaml:"token"`
-	Sender   string `yaml:"sender"`
-	Receiver string `yaml:"receiver"`
+	Host          string `yaml:"host"`
+	Port          int    `yaml:"port"`
+	Token         string `yaml:"token"`
+	Sender        string `yaml:"sender"`
+	Receiver      string `yaml:"receiver"`
+	SendSeparatly bool   `yaml:"send_separatly"`
 }
 
 // 具体邮件发送配置定义
 type mailSendConf struct {
-	title           string
-	receiverArr     []string
-	ccArr           []string
-	content         string
-	nickName        string
-	isSendSeparatly bool
+	title       string
+	receiverArr []string
+	ccArr       []string
+	content     string
+	nickName    string
 }
 
 // 邮件发送结构体定义
@@ -108,15 +108,6 @@ func SetNickName(nickName string) func(*mailSendConf) {
 	}
 }
 
-// 设定在发送给多个收件人的时候分开发送
-// 避免不相关的收件人都看到信息
-// 后续: 可以考虑通过 hook 钩子的方式，配置不同的发送通道
-func SetSendSeparatly() func(*mailSendConf) {
-	return func(conf *mailSendConf) {
-		conf.isSendSeparatly = true
-	}
-}
-
 // 发送邮件接口实现
 func (impl mailSenderQQImpl) Send(setterArr ...mailSendConfSetter) error {
 	conf := new(mailSendConf)
@@ -128,7 +119,10 @@ func (impl mailSenderQQImpl) Send(setterArr ...mailSendConfSetter) error {
 		conf.receiverArr = strings.Split(strings.TrimSpace(impl.conf.Receiver), receiverSplitor)
 	}
 
-	if conf.isSendSeparatly {
+	// 设定在发送给多个收件人的时候分开发送
+	// 避免不相关的收件人都看到信息
+	// 后续: 可以考虑通过 hook 钩子的方式，配置不同的发送通道
+	if impl.conf.SendSeparatly {
 		for _, currentReceiver := range conf.receiverArr {
 			err := impl.send(conf, []string{currentReceiver})
 			if nil != err {

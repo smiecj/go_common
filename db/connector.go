@@ -16,6 +16,7 @@ type RDBConnector interface {
 	Insert(...RDBInsertConfigFunc) (UpdateRet, error)
 	Update(...RDBUpdateConfigFunc) (UpdateRet, error)
 	Delete(...RDBDeleteConfigFunc) (UpdateRet, error)
+	Backup(...RDBBackupConfigFunc) (UpdateRet, error)
 	Search(...RDBSearchConfigFunc) (SearchRet, error)
 	Count(...RDBSearchConfigFunc) (SearchRet, error)
 	Distinct(...RDBSearchConfigFunc) (SearchRet, error)
@@ -434,6 +435,67 @@ func SearchSetOrderField(field string) func(*rdbSearchAction) {
 func SearchSetOrderFieldAndAsc(field, asc string) func(*rdbSearchAction) {
 	return func(action *rdbSearchAction) {
 		action.condition.Order.Field, action.condition.Order.Sc = field, asc
+	}
+}
+
+// 备份配置
+type rdbBackupAction struct {
+	sourceSpace *space
+	condition   UpdateCondition
+	targetSpace *space
+}
+
+// 获取更新条件
+func (action *rdbBackupAction) GetCondition() UpdateCondition {
+	return action.condition
+}
+
+// 获取源表名称
+func (action *rdbBackupAction) GetSourceSpaceName() string {
+	return action.sourceSpace.GetSpaceName()
+}
+
+// 获取目标表名称
+func (action *rdbBackupAction) GetTargetSpaceName() string {
+	return action.targetSpace.GetSpaceName()
+}
+
+// 创建一个备份配置
+// DB 保护: 默认最多备份 1kw 条数据
+func MakeRDBBackupAction() *rdbBackupAction {
+	action := new(rdbBackupAction)
+	action.condition.Limit = maxModifyLimit
+	return action
+}
+
+// 备份数据配置方法定义
+type RDBBackupConfigFunc func(*rdbBackupAction)
+
+// 设置备份数据源表空间
+func BackupSetSourceSpace(db, table string) func(*rdbBackupAction) {
+	return func(action *rdbBackupAction) {
+		action.sourceSpace = &space{db: db, table: table}
+	}
+}
+
+// 设置备份条件
+func BackupSetCondition(args ...string) func(*rdbBackupAction) {
+	return func(action *rdbBackupAction) {
+		action.condition.WhereArr = buildWhereConditionArr(args...)
+	}
+}
+
+// 设置备份数据量
+func BackupSetLimit(limit int) func(*rdbBackupAction) {
+	return func(action *rdbBackupAction) {
+		action.condition.Limit = limit
+	}
+}
+
+// 设置备份目标表
+func BackupSetTargetSpace(db, table string) func(*rdbBackupAction) {
+	return func(action *rdbBackupAction) {
+		action.targetSpace = &space{db: db, table: table}
 	}
 }
 

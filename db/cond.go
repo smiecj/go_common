@@ -124,3 +124,21 @@ type UpdateCondition struct {
 	WhereArr whereArr `json:"where"`
 	Limit    int
 }
+
+// 获取更新条件中的 limit 部分
+func (condition UpdateCondition) GetLimitCondition() string {
+	limitCondition := ""
+	if condition.Limit != 0 {
+		limitCondition = fmt.Sprintf("limit %d", condition.Limit)
+	}
+	return limitCondition
+}
+
+// 获取更新条件中的 where 条件部分
+func (condition UpdateCondition) GetUpdateCondition() string {
+	updateCondition := ""
+	if len(condition.WhereArr) != 0 {
+		updateCondition = fmt.Sprintf("WHERE %s", condition.WhereArr.ToSQL())
+	}
+	return updateCondition
+}
