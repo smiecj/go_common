@@ -124,6 +124,15 @@ for _, currentField := range SearchRet.FieldArr {
 	}
 }
 
+// 查询数据 - join
+// 注意: join 条件中的 表名 最好带上 `, 避免拼装成SQL 的时候被加上 单引号 导致SQL 执行错误
+searchRet, err = connector.Search(SearchSetSpace("db_name", "table_name"),
+  SearchSetObjectArrType([]object{}),
+  SearchSetCondition("ID", "=", "1"),
+  SearchSetJoin(JoinCondition{DB: "db_name", Table: "table_name",
+    Condition: fmt.Sprintf("%s.%s = `%s`.%s", tableStudent, "class_id", tableClass, "id")}),
+  SearchSetKeyArr([]string{"ID", "name"})
+
 // 备份数据
 backupRet, err := connector.Backup(BackupSetSourceSpace("db_name", "source_table_name"),
     BackupSetTargetSpace("db_name", "target_table_name"))
@@ -262,10 +271,14 @@ isUsed := net.CheckLocalPortIsUsed(22)
 
 # 待实现功能
 
+## bug 修复
+- ticker: 可重复start 并且不会报错，不能重复启动
+
 ## RPC 框架
 
 ## 告警收敛
 
 ## 告警设置默认接收人
 
-## mysql 数据操作，超过指定数据量自动分批（防止一次性删除/插入过多数据）
+## db
+- mysql 数据操作，超过指定数据量自动分批（防止一次性删除/插入过多数据）
