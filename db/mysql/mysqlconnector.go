@@ -90,10 +90,10 @@ func (connector *mysqlConnector) Insert(funcArr ...RDBInsertConfigFunc) (ret Upd
 		}
 		dbRet = connector.db.Table(action.GetSpaceName()).Create(keyValueMapArr)
 	} else if len(objectArr) != 0 {
-		searchKeyArr := []string{}
+		insertKeyArr := []string{}
 		keyArr := action.GetKeyArr()
 		if len(keyArr) != 0 {
-			searchKeyArr = keyArr
+			insertKeyArr = keyArr
 		}
 		// 注意数组类型需要转换一下，传入的 interface{} 数组无法被 gorm 识别（即数组需要保持原有的type）
 		var toInsertArr interface{} = objectArr
@@ -105,7 +105,8 @@ func (connector *mysqlConnector) Insert(funcArr ...RDBInsertConfigFunc) (ret Upd
 			}
 			toInsertArr = slice.Interface()
 		}
-		dbRet = connector.db.Table(action.GetSpaceName()).Select(searchKeyArr).Create(toInsertArr)
+		// todo: insert 不能选定字段。可能要想其他办法进行插入
+		dbRet = connector.db.Table(action.GetSpaceName()).Select(insertKeyArr).Create(toInsertArr)
 	} else {
 		log.Warn("[mysqlConnector.Insert] To insert data is empty")
 		return ret, nil
@@ -216,7 +217,7 @@ func (connector *mysqlConnector) Search(funcArr ...RDBSearchConfigFunc) (ret Sea
 	// 统计 count
 	var count int64
 	keyArr := action.GetKeyArr()
-	dbRet := connector.db.Table(action.GetSpaceName()).
+	dbRet := connector.db.Table(action.GetSpaceName()).Joins(condition.Join.ToSQL()).
 		Select(keyArr).Where(condition.WhereArr.ToSQL()).Count(&count)
 	if nil != dbRet.Error {
 		log.Error("[mysqlConnector.Count] Count failed, table: %s, reason: %s", action.GetSpaceName(), dbRet.Error.Error())
@@ -234,7 +235,7 @@ func (connector *mysqlConnector) Search(funcArr ...RDBSearchConfigFunc) (ret Sea
 	objectArrType := action.GetObjectArrType()
 	if nil != objectArrType {
 		objectReflectArr := reflect.MakeSlice(objectArrType, 0, 0).Interface()
-		dbRet = connector.db.Table(action.GetSpaceName()).
+		dbRet = connector.db.Table(action.GetSpaceName()).Joins(condition.Join.ToSQL()).
 			Select(keyArr).Where(condition.WhereArr.ToSQL()).Order(orderStr).
 			Offset(condition.Page.No * condition.Page.Limit).Limit(condition.Page.Limit).
 			Find(&objectReflectArr)
@@ -243,7 +244,7 @@ func (connector *mysqlConnector) Search(funcArr ...RDBSearchConfigFunc) (ret Sea
 		// 非导入到 object 情况，存在 value 在转换的时候不准确的问题，需要测试
 		keyValueMapArr := make([]map[string]interface{}, 0)
 		dbRet = connector.db.Table(action.GetSpaceName()).
-			Select(keyArr).Where(condition.WhereArr.ToSQL()).Order(orderStr).
+			Select(keyArr).Where(condition.WhereArr.ToSQL()).Order(orderStr).Joins(condition.Join.ToSQL()).
 			Offset(condition.Page.No * condition.Page.Limit).Limit(condition.Page.Limit).
 			Find(&keyValueMapArr)
 		for _, currentKeyValueMap := range keyValueMapArr {

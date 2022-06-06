@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/smiecj/go_common/db"
-	"github.com/smiecj/go_common/util/log"
 	"github.com/stretchr/testify/require"
 )
 
@@ -23,5 +22,4 @@ func TestImpalaConnector(t *testing.T) {
 	ret, err := connector.Count(db.SearchSetSpace(testDBName, testTableName))
 	require.Empty(t, err)
 	require.Less(t, 0, ret.Total)
-	log.Info("[test] total: %d", ret.Total)
 }

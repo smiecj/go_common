@@ -4,10 +4,14 @@ package db
 import (
 	"bytes"
 	"fmt"
+	"strings"
 )
 
 type conditionType string
 type conditionMethod string
+
+// join 表方式
+type JoinMethod string
 
 const (
 	conditionTypeAssert conditionType = "assert"
@@ -23,6 +27,9 @@ const (
 	conditionMethodBigger         conditionMethod = ">"
 	conditionMethodSmallerOrEqual conditionMethod = "<="
 	conditionMethodBiggerOrEqual  conditionMethod = ">="
+
+	LeftJoin  JoinMethod = "LEFT JOIN"
+	RightJoin JoinMethod = "RIGHT JOIN"
 )
 
 var (
@@ -64,9 +71,10 @@ func (arr whereArr) ToSQL() string {
 	for _, currentCond := range arr {
 		switch currentCond.Type {
 		case conditionTypeAssert:
-			// fix-对in, not in 这种条件，value 前后不需要加上引号
+			// fix-对 value 关键字中有`` -- 作为字段标识, in, not in 这种条件，value 前后不需要加上引号
 			condFormatStr := "%s %s '%s'"
-			if currentCond.Method == conditionMethodIn || currentCond.Method == conditionMethodNotIn {
+			if currentCond.Method == conditionMethodIn || currentCond.Method == conditionMethodNotIn ||
+				strings.Contains(currentCond.Value, "`") {
 				condFormatStr = "%s %s %s"
 			}
 			buffer.WriteString(fmt.Sprintf(condFormatStr,
@@ -108,7 +116,38 @@ func buildWhereConditionArr(args ...string) whereArr {
 	return retArr
 }
 
+// join 条件
+type joinCondition struct {
+	joinMethod JoinMethod
+	space      space
+	condition  []string
+}
+
+type joinConditionSlice []joinCondition
+
+func (conditionSlice joinConditionSlice) ToSQL() string {
+	var conditionBuf bytes.Buffer
+	for _, currentCondition := range conditionSlice {
+		if conditionBuf.Len() != 0 {
+			conditionBuf.WriteString(" ")
+		}
+		conditionBuf.WriteString(fmt.Sprintf("%s %s ON %s", currentCondition.joinMethod, currentCondition.space.GetSpaceName(),
+			buildWhereConditionArr(currentCondition.condition...).ToSQL()))
+	}
+	return conditionBuf.String()
+}
+
+// 给外部调用用的组装的 join condition
+// todo: condition 中的字段部分逻辑抽象出来，否则有点像直接写SQL
+type JoinCondition struct {
+	JoinMethod JoinMethod
+	DB         string
+	Table      string
+	Condition  string
+}
+
 type SearchCondition struct {
+	Join  joinConditionSlice
 	Order struct {
 		Field string `json:"field"`
 		Sc    string `json:"sc"`
@@ -120,22 +159,22 @@ type SearchCondition struct {
 	WhereArr whereArr `json:"where"`
 }
 
-type UpdateCondition struct {
+type updateCondition struct {
 	WhereArr whereArr `json:"where"`
 	Limit    int
 }
 
 // 获取更新条件中的 limit 部分
-func (condition UpdateCondition) GetLimitCondition() string {
+func (condition updateCondition) GetLimitCondition() string {
 	limitCondition := ""
 	if condition.Limit != 0 {
-		limitCondition = fmt.Sprintf("limit %d", condition.Limit)
+		limitCondition = fmt.Sprintf("LIMIT %d", condition.Limit)
 	}
 	return limitCondition
 }
 
 // 获取更新条件中的 where 条件部分
-func (condition UpdateCondition) GetUpdateCondition() string {
+func (condition updateCondition) GetUpdateCondition() string {
 	updateCondition := ""
 	if len(condition.WhereArr) != 0 {
 		updateCondition = fmt.Sprintf("WHERE %s", condition.WhereArr.ToSQL())

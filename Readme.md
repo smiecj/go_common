@@ -127,6 +127,15 @@ for _, currentField := range SearchRet.FieldArr {
 	}
 }
 
+// query - join
+// notice: table name in join condition should contains '`' to avoid append ' character
+searchRet, err = connector.Search(SearchSetSpace("db_name", "table_name"),
+  SearchSetObjectArrType([]object{}),
+  SearchSetCondition("ID", "=", "1"),
+  SearchSetJoin(JoinCondition{DB: "db_name", Table: "table_name",
+    Condition: fmt.Sprintf("%s.%s = `%s`.%s", tableStudent, "class_id", tableClass, "id")}),
+  SearchSetKeyArr([]string{"ID", "name"})
+
 // backup
 backupRet, err := connector.Backup(BackupSetSourceSpace("db_name", "source_table_name"),
     BackupSetTargetSpace("db_name", "target_table_name"))

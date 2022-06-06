@@ -4,11 +4,17 @@ import (
 	"bytes"
 	"fmt"
 	"reflect"
+	"regexp"
+	"strings"
 )
 
 const (
 	// 变更操作 最大 limit
-	maxModifyLimit = 10 ^ 7
+	maxModifyLimit = 100000
+)
+
+var (
+	multipleSpaceRegexp = regexp.MustCompile(" +")
 )
 
 // Relational data connector
@@ -240,7 +246,7 @@ func InsertAddKeyArr(keyArr []string) func(*rdbInsertAction) {
 // 更新配置
 type rdbUpdateAction struct {
 	rdbField
-	condition UpdateCondition
+	condition updateCondition
 }
 
 // 创建一个更新设置
@@ -250,7 +256,7 @@ func MakeRDBUpdateAction() *rdbUpdateAction {
 }
 
 // 获取更新条件
-func (action *rdbUpdateAction) GetCondition() UpdateCondition {
+func (action *rdbUpdateAction) GetCondition() updateCondition {
 	return action.condition
 }
 
@@ -295,11 +301,11 @@ func UpdateAddKeyArr(keyArr []string) func(*rdbUpdateAction) {
 // 删除配置
 type rdbDeleteAction struct {
 	space
-	condition UpdateCondition
+	condition updateCondition
 }
 
 // 获取删除条件
-func (action *rdbDeleteAction) GetCondition() UpdateCondition {
+func (action *rdbDeleteAction) GetCondition() updateCondition {
 	return action.condition
 }
 
@@ -438,15 +444,38 @@ func SearchSetOrderFieldAndAsc(field, asc string) func(*rdbSearchAction) {
 	}
 }
 
+// 设置 join 条件
+func SearchSetJoin(conditions ...JoinCondition) RDBSearchConfigFunc {
+	return func(rsa *rdbSearchAction) {
+		// 检查 join condition 设置一些默认值
+		for _, currentCondition := range conditions {
+			toAppendJoinCondition := joinCondition{}
+			toAppendJoinCondition.joinMethod = currentCondition.JoinMethod
+			if currentCondition.JoinMethod == "" {
+				toAppendJoinCondition.joinMethod = LeftJoin
+			}
+			toAppendJoinCondition.space = space{db: currentCondition.DB, table: currentCondition.Table}
+			// slice 进行拷贝, 避免外部变量资源不释放
+			toAppendJoinCondition.condition = make([]string, len(currentCondition.Condition))
+
+			// condition: 去掉多余空格，并按空格拆分成多个条件
+			conditionStr := multipleSpaceRegexp.ReplaceAllString(currentCondition.Condition, " ")
+			toAppendJoinCondition.condition = strings.Split(conditionStr, " ")
+
+			rsa.condition.Join = append(rsa.condition.Join, toAppendJoinCondition)
+		}
+	}
+}
+
 // 备份配置
 type rdbBackupAction struct {
 	sourceSpace *space
-	condition   UpdateCondition
+	condition   updateCondition
 	targetSpace *space
 }
 
 // 获取更新条件
-func (action *rdbBackupAction) GetCondition() UpdateCondition {
+func (action *rdbBackupAction) GetCondition() updateCondition {
 	return action.condition
 }
 
