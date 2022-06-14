@@ -146,3 +146,17 @@ func GetShortLunarDateAfterDay(day int) string {
 		00, 00, 00)
 	return fmt.Sprintf("%.2d-%.2d", lunarObj.Lunar.GetMonth(), lunarObj.Lunar.GetDay())
 }
+
+// 获取本周的最后一天（周日）日期
+func GetThisWeekLastDate() string {
+	currentTime := time.Now()
+	currentWeekDate := currentTime.Weekday()
+	var lastDateDiff int
+	// 特殊逻辑: time 库中一周默认从 周日开始
+	if time.Sunday == currentWeekDate {
+		lastDateDiff = 0
+	} else {
+		lastDateDiff = int(time.Saturday-currentWeekDate) + 1
+	}
+	return currentTime.Add(time.Hour * 24 * time.Duration(lastDateDiff)).Format(dateFormat)
+}
