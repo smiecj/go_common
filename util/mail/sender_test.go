@@ -7,12 +7,12 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// 测试 通过 QQMailSender 发送一封邮件
+// 测试 通过 SMTPMailSender 发送一封邮件
 func TestSendMail(t *testing.T) {
 	configManager, err := config.GetYamlConfigManager("/tmp/mailconf.yml")
 	require.Empty(t, err)
 
-	sender, err := NewQQMailSender(configManager)
+	sender, err := NewSMTPMailSender(configManager)
 	require.Empty(t, err)
 
 	err = sender.Send(SetTitle("test_title"), SetContent("test_content"), SetNickName("smiecj"))

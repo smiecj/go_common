@@ -128,11 +128,10 @@ func TestMySQLConnector(t *testing.T) {
 	searchRet, err = connector.Search(SearchSetSpace(dbTemp, tableStudent),
 		SearchSetObjectArrType(testStudentClassSlice),
 		SearchSetCondition(fmt.Sprintf("%s.%s", tableStudent, "name"), "=", testStudentSingle.Name),
-		SearchSetJoin(JoinCondition{DB: dbTemp, Table: tableClass,
-			Condition: fmt.Sprintf("%s.%s = %s.%s", tableStudent, "class_id", tableClass, "id")}),
+		SearchAddJoin(dbTemp, tableStudent, "class_id", tableClass, "id"),
 		SearchSetKeyArr(testStudentClassSlice.getFields()))
 	require.Empty(t, err)
-	require.Equal(t, 1, searchRet.Len)
+	require.LessOrEqual(t, 1, searchRet.Len)
 
 	// distinct
 	searchRet, err = connector.Distinct(SearchSetSpace(dbTemp, tableStudent),
@@ -154,7 +153,7 @@ func TestMySQLConnector(t *testing.T) {
 	require.Equal(t, nil, err)
 	require.LessOrEqual(t, 1, backupRet.AffectedRows)
 
-	// delete
+	// delete all
 	deleteRet, err := connector.Delete(DeleteSetSpace(dbTemp, tableStudent),
 		DeleteSetCondition("name", "in", "('xiaoming', 'xiaohong', 'xiaolin', 'xiaozhang')"))
 	require.Equal(t, nil, err)

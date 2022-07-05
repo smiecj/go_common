@@ -137,15 +137,6 @@ func (conditionSlice joinConditionSlice) ToSQL() string {
 	return conditionBuf.String()
 }
 
-// 给外部调用用的组装的 join condition
-// todo: condition 中的字段部分逻辑抽象出来，否则有点像直接写SQL
-type JoinCondition struct {
-	JoinMethod JoinMethod
-	DB         string
-	Table      string
-	Condition  string
-}
-
 type SearchCondition struct {
 	Join  joinConditionSlice
 	Order struct {

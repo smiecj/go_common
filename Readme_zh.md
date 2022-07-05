@@ -129,8 +129,7 @@ for _, currentField := range SearchRet.FieldArr {
 searchRet, err = connector.Search(SearchSetSpace("db_name", "table_name"),
   SearchSetObjectArrType([]object{}),
   SearchSetCondition("ID", "=", "1"),
-  SearchSetJoin(JoinCondition{DB: "db_name", Table: "table_name",
-    Condition: fmt.Sprintf("%s.%s = `%s`.%s", tableStudent, "class_id", tableClass, "id")}),
+  SearchAddJoin("db_name", "left_table", "left_field", "right_table", "right_field"),
   SearchSetKeyArr([]string{"ID", "name"})
 
 // 备份数据
@@ -193,7 +192,7 @@ mail:
 发送逻辑:
 ```
 configManager, err := config.GetYamlConfigManager("mail_conf.yml")
-sender, err := NewQQMailSender(configManager)
+sender, err := NewSMTPMailSender(configManager)
 // 可以不设置 AddReceiver，默认收件人 使用 配置中定义的收件人
 err = sender.Send(AddReceiver("receiver mail account"), SetTitle("test_title"), SetContent("test_content"), SetNickName("nickname"))
 ```
