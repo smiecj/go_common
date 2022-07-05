@@ -132,8 +132,7 @@ for _, currentField := range SearchRet.FieldArr {
 searchRet, err = connector.Search(SearchSetSpace("db_name", "table_name"),
   SearchSetObjectArrType([]object{}),
   SearchSetCondition("ID", "=", "1"),
-  SearchSetJoin(JoinCondition{DB: "db_name", Table: "table_name",
-    Condition: fmt.Sprintf("%s.%s = `%s`.%s", tableStudent, "class_id", tableClass, "id")}),
+  SearchAddJoin("db_name", "left_table", "left_field", "right_table", "right_field"),
   SearchSetKeyArr([]string{"ID", "name"})
 
 // backup
@@ -196,7 +195,7 @@ mail:
 send mail
 ```
 configManager, err := config.GetYamlConfigManager("mail_conf.yml")
-sender, err := NewQQMailSender(configManager)
+sender, err := NewSMTPMailSender(configManager)
 // AddReceiver is not necessary, defaultly use receiver in config file (mail_conf.yml)
 err = sender.Send(AddReceiver("receiver mail account"), SetTitle("test_title"), SetContent("test_content"), SetNickName("nickname"))
 ```

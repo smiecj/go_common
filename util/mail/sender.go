@@ -51,8 +51,8 @@ type Sender interface {
 	Send(...mailSendConfSetter) error
 }
 
-// QQ邮箱 发送具体实现
-type mailSenderQQImpl struct {
+// SMTP邮箱 发送具体实现
+type mailSenderSMTPImpl struct {
 	conf mailSenderInitConf
 }
 
@@ -109,7 +109,7 @@ func SetNickName(nickName string) func(*mailSendConf) {
 }
 
 // 发送邮件接口实现
-func (impl mailSenderQQImpl) Send(setterArr ...mailSendConfSetter) error {
+func (impl mailSenderSMTPImpl) Send(setterArr ...mailSendConfSetter) error {
 	conf := new(mailSendConf)
 	for _, setter := range setterArr {
 		setter(conf)
@@ -136,23 +136,23 @@ func (impl mailSenderQQImpl) Send(setterArr ...mailSendConfSetter) error {
 	return nil
 }
 
-// 发送QQ邮箱，调用 smtp 接口逻辑
-func (impl mailSenderQQImpl) send(conf *mailSendConf, receiverArr []string) error {
+// 发送邮件，调用 smtp 接口逻辑
+func (impl mailSenderSMTPImpl) send(conf *mailSendConf, receiverArr []string) error {
 	auth := smtp.PlainAuth("", impl.conf.Sender, impl.conf.Token, impl.conf.Host)
 	contentType := "Content-Type: text/plain; charset=UTF-8"
 	msg := []byte("To: " + strings.Join(receiverArr, ",") + "\r\nFrom: " + conf.nickName +
 		"<" + impl.conf.Sender + ">\r\nSubject: " + conf.title + "\r\n" + contentType + "\r\n\r\n" + conf.content)
 	err := smtp.SendMail(fmt.Sprintf("%s:%d", impl.conf.Host, impl.conf.Port), auth, impl.conf.Sender, receiverArr, msg)
 	if err != nil {
-		log.Error("[mailSenderQQImpl.SendMail] send mail failed: %s", err.Error())
+		log.Error("[mailSenderSMTPImpl.SendMail] send mail failed: %s", err.Error())
 		return errorcode.BuildErrorWithMsg(errorcode.SendMailFailed, err.Error())
 	}
-	log.Info("[mailSenderQQImpl.SendMail] send mail success, sender: %s, receiver: %v", impl.conf.Sender, receiverArr)
+	log.Info("[mailSenderSMTPImpl.SendMail] send mail success, sender: %s, receiver: %v", impl.conf.Sender, receiverArr)
 	return nil
 }
 
-// 构建一个 QQ 邮件发送器
-func NewQQMailSender(configManager config.Manager) (Sender, error) {
+// 构建一个 SMTP 邮件发送器
+func NewSMTPMailSender(configManager config.Manager) (Sender, error) {
 	var sender Sender
 	mailSenderLock.RLock()
 	senderInitConf := mailSenderInitConf{}
@@ -167,9 +167,9 @@ func NewQQMailSender(configManager config.Manager) (Sender, error) {
 	mailSenderLock.Lock()
 	defer mailSenderLock.Unlock()
 
-	impl := new(mailSenderQQImpl)
+	impl := new(mailSenderSMTPImpl)
 	if senderInitConf.Host == "" {
-		senderInitConf.Host = "smtp.qq.com"
+		return nil, errorcode.BuildErrorWithMsg(errorcode.SenderInitFailed, "smtp host is empty")
 	}
 	if senderInitConf.Port == 0 {
 		senderInitConf.Port = 587

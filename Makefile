@@ -15,3 +15,6 @@ test_db_impala:
 
 test_config:
 	go test -count=1 -v github.com/smiecj/go_common/config -run="TestYamlConfig"
+
+test_smtp:
+	go test -count=1 -v github.com/smiecj/go_common/util/mail -run="TestSendMail"

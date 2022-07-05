@@ -17,7 +17,7 @@ func TestSendMail(t *testing.T) {
 	configManager, err := config.GetYamlConfigManager("/tmp/mailconf.yml")
 	require.Empty(t, err)
 
-	sender, err := mail.NewQQMailSender(configManager)
+	sender, err := mail.NewSMTPMailSender(configManager)
 	require.Empty(t, err)
 
 	alerter := GetMailAlerter(sender)

@@ -115,7 +115,7 @@ func GetDateBeforeDay(day int) string {
 // 获取当前日期指定天数之后的短日期
 func GetShortDateAfterDay(day int) string {
 	targetTime := time.Now().Add(time.Duration(day*24) * time.Hour)
-	return targetTime.Format(dateFormat)
+	return targetTime.Format(shortDateFormat)
 }
 
 // 获取当前日期指定天数之后的日期

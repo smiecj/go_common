@@ -4,17 +4,11 @@ import (
 	"bytes"
 	"fmt"
 	"reflect"
-	"regexp"
-	"strings"
 )
 
 const (
 	// 变更操作 最大 limit
 	maxModifyLimit = 100000
-)
-
-var (
-	multipleSpaceRegexp = regexp.MustCompile(" +")
 )
 
 // Relational data connector
@@ -444,26 +438,32 @@ func SearchSetOrderFieldAndAsc(field, asc string) func(*rdbSearchAction) {
 	}
 }
 
-// 设置 join 条件
-func SearchSetJoin(conditions ...JoinCondition) RDBSearchConfigFunc {
+// 设置 join 条件, 默认 join 表 为 查询条件中的右侧表
+func SearchAddJoin(fieldArr ...string) RDBSearchConfigFunc {
 	return func(rsa *rdbSearchAction) {
-		// 检查 join condition 设置一些默认值
-		for _, currentCondition := range conditions {
-			toAppendJoinCondition := joinCondition{}
-			toAppendJoinCondition.joinMethod = currentCondition.JoinMethod
-			if currentCondition.JoinMethod == "" {
-				toAppendJoinCondition.joinMethod = LeftJoin
-			}
-			toAppendJoinCondition.space = space{db: currentCondition.DB, table: currentCondition.Table}
-			// slice 进行拷贝, 避免外部变量资源不释放
-			toAppendJoinCondition.condition = make([]string, len(currentCondition.Condition))
-
-			// condition: 去掉多余空格，并按空格拆分成多个条件
-			conditionStr := multipleSpaceRegexp.ReplaceAllString(currentCondition.Condition, " ")
-			toAppendJoinCondition.condition = strings.Split(conditionStr, " ")
-
-			rsa.condition.Join = append(rsa.condition.Join, toAppendJoinCondition)
+		// at least contain: db, left table, left field, right table, right field
+		// can also provide: join method (default left join)
+		if len(fieldArr) < 5 {
+			return
 		}
+		toAppendJoinCondition := joinCondition{}
+		db, leftTable, leftField, rightTable, rightField := fieldArr[0], fieldArr[1], fieldArr[2], fieldArr[3], fieldArr[4]
+		toAppendJoinCondition.joinMethod = LeftJoin
+		if len(fieldArr) == 6 {
+			toAppendJoinCondition.joinMethod = JoinMethod(fieldArr[6])
+		}
+		toAppendJoinCondition.space = space{db: db, table: rightTable}
+		// condition 的组装，一般左右条件都是字段名，暂不考虑更复杂的情况（多条件，或是值判断）
+
+		// condition: 去掉多余空格，并按空格拆分成多个条件
+		toAppendJoinCondition.condition = []string{
+			// 加上 ` 表标识，防止当成字段
+			fmt.Sprintf("`%s`.%s", leftTable, leftField),
+			"=",
+			fmt.Sprintf("`%s`.%s", rightTable, rightField),
+		}
+
+		rsa.condition.Join = append(rsa.condition.Join, toAppendJoinCondition)
 	}
 }
 
