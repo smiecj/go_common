@@ -1,0 +1,28 @@
+{
+    "where": [
+        {
+            "type": "assert",
+            "key": "id",
+            "method": "equal",
+            "value": "1"
+        },
+        {
+            // type = and not need to pass, default is and
+            "type": "or"
+        },
+        {
+            "type": "assert",
+            "key": "name",
+            "method": "like",
+            "value": "smiecj"
+        }
+    ],
+    "order": {
+        "field": "name",
+        "sc": "asc"
+    },
+    "page": {
+        "no": 0,
+        "limit": 10
+    }
+}
