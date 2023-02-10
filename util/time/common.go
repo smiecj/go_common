@@ -14,6 +14,7 @@ const (
 	normalFormat    = "2006-01-02 15:04:05"
 	dateFormat      = "2006-01-02"
 	monthFormat     = "2006-01"
+	minuteFormat    = "15:04"
 	shortDateFormat = "01-02"
 )
 
@@ -37,6 +38,11 @@ func GetCurrentTimestamp() string {
 // 获取当前日期
 func GetCurrentDate() string {
 	return time.Now().Format(dateFormat)
+}
+
+// 获取当前分钟
+func GetCurrentMinute() string {
+	return time.Now().Format(minuteFormat)
 }
 
 // 将指定时间戳和当前时间戳 做时间差值对比，当前时间 - 传入时间
@@ -69,7 +75,7 @@ func GetTimestampAfterDuration(startTimestamp string, dur time.Duration) (target
 }
 
 // unix 时间戳（秒）格式转 normal 格式
-func GetTimestampByUnixtime(unixtime string) (targetTimestamp string, err error) {
+func GetTimestampByUnixtimeStr(unixtime string) (targetTimestamp string, err error) {
 	unixtimeInt, err := strconv.Atoi(unixtime)
 	if nil != err {
 		err = errorcode.BuildErrorWithMsg(errorcode.ParseTimeFailed, err.Error())
@@ -77,6 +83,13 @@ func GetTimestampByUnixtime(unixtime string) (targetTimestamp string, err error)
 	targetTime := time.Unix(int64(unixtimeInt), 0)
 	targetTimestamp = targetTime.Format(normalFormat)
 	return
+}
+
+// unix 时间戳（毫秒）格式转 normal 格式
+func GetTimestampByUnixMill(unixMill int) string {
+	targetTime := time.UnixMilli(int64(unixMill))
+	targetTimestamp := targetTime.Format(normalFormat)
+	return targetTimestamp
 }
 
 // 获取指定日期的星期数

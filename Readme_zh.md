@@ -9,7 +9,7 @@
 
 ```
 import "github.com/smiecj/go_common/http"
-client := GetHTTPClient()
+client := http.DefaultHTTPClient()
 client.Do(Get(), Url("http://..."))
 ```
 
@@ -220,7 +220,7 @@ alerter.Alert(SetAlertTitleAndMsg(testAlertTitle, testAlertMsg))
 
 ```
 // 获取 Prometheus 监控，单例模式
-manager := GetPrometheusMonitorManager(
+manager := GetPrometheusMonitorManagerByConf(
 	PrometheusMonitorManagerConf{
 		Port: 开放端口,
 })

@@ -11,7 +11,7 @@ e.g. http client, config manager and db connector etc.
 
 ```
 import "github.com/smiecj/go_common/http"
-client := GetHTTPClient()
+client := http.DefaultHTTPClient()
 client.Do(Get(), Url("http://..."))
 ```
 
@@ -222,7 +222,7 @@ Current support metrics: gauge, counter
 
 ```
 // get prometheus monitor manager
-manager := GetPrometheusMonitorManager(
+manager := GetPrometheusMonitorManagerByConf(
 	PrometheusMonitorManagerConf{
 		Port: http_server_port,
 })

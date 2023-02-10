@@ -8,7 +8,7 @@ test_db_file:
 	go test -count=1 -v github.com/smiecj/go_common/db/local -run="TestLocalFileConnector"
 
 test_db_mysql:
-	go test -count=1 -v github.com/smiecj/go_common/db/mysql -run="TestMySQLConnector" -config=/tmp/conf.yaml
+	go test -count=1 -v github.com/smiecj/go_common/db/mysql -run="TestMySQLConnector"
 
 test_db_impala:
 	go test -count=1 -v github.com/smiecj/go_common/db/impala -run="TestImpalaConnector"

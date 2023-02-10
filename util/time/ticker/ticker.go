@@ -54,8 +54,8 @@ type tickerConf struct {
 	ctx           context.Context
 	cancel        context.CancelFunc
 	isIgnoreError bool
+	weekday       time.Weekday
 	// timeout time.Duration
-
 }
 
 type tickerConfFunc func(*tickerConf) error
@@ -102,6 +102,9 @@ func NewFixHourTicker(confFuncArr ...tickerConfFunc) Ticker {
 		for {
 			select {
 			case <-hourTicker.ticker.C:
+				if conf.weekday != -1 && time.Now().Weekday() != conf.weekday {
+					continue
+				}
 				if time.Now().Hour() == conf.hour && !hourTicker.todayHasRun {
 					log.Info("[FixHourTicker.tick] start")
 					hourTicker.todayHasRun = true
@@ -173,10 +176,19 @@ func SetIsIgnoreError(isIgnoreError bool) tickerConfFunc {
 	}
 }
 
+// 设置调度星期，可用于设置成周末调度
+func SetTickWeekday(weekday time.Weekday) tickerConfFunc {
+	return func(conf *tickerConf) error {
+		conf.weekday = weekday
+		return nil
+	}
+}
+
 // 获取带有一些初始化配置的 定时调度配置
 func getTickerConf() *tickerConf {
 	conf := new(tickerConf)
 	conf.ctx = context.Background()
+	conf.weekday = -1
 	return conf
 }
 
