@@ -38,15 +38,15 @@ var (
 
 // mysql 连接配置
 type MySQLConnectOption struct {
-	Host        string `yaml:"host"`
-	Port        int    `yaml:"port"`
-	User        string `yaml:"user"`
-	Password    string `yaml:"password"`
-	Database    string `yaml:"database"`
-	IsSSL       bool   `yaml:"is_ssl"`
-	MaxLifeTime int    `yaml:"max_life_time"`
-	MaxIdleTime int    `yaml:"max_idle_time"`
-	MaxIdleConn int    `yaml:"max_idle_conn"`
+	Host        string `yaml:"host" json:"host"`
+	Port        int    `yaml:"port" json:"port"`
+	User        string `yaml:"user" json:"user"`
+	Password    string `yaml:"password" json:"password"`
+	Database    string `yaml:"database" json:"database"`
+	IsSSL       bool   `yaml:"is_ssl" json:"isSSL"`
+	MaxLifeTime int    `yaml:"max_life_time" json:"maxLifeTime"`
+	MaxIdleTime int    `yaml:"max_idle_time" json:"maxIdleTime"`
+	MaxIdleConn int    `yaml:"max_idle_conn" json:"maxIdleConn"`
 }
 
 // 对mysql 配置进行检查，不合理的配置配默认值

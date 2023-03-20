@@ -320,3 +320,4 @@ isUsed := net.CheckLocalPortIsUsed(22)
 
 ## db
 - mysql 数据操作，超过指定数据量自动分批（防止一次性删除/插入过多数据）
+- mysql 支持 group by 、 distinct

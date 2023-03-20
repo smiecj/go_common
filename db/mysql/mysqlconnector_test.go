@@ -136,7 +136,6 @@ func TestMySQLConnector(t *testing.T) {
 	require.LessOrEqual(t, 1, searchRet.Len)
 
 	// search with group by
-	// 当前: 新增 group by 功能
 	// select class_id, count(*) from test_class left join test_student on ... group by test_class.id
 	searchRet, err = connector.Search(SearchSetSpace(dbTemp, tableStudent),
 		SearchSetObjectArrType(testStudentClassSlice),

@@ -108,7 +108,7 @@ func NewFixHourTicker(confFuncArr ...tickerConfFunc) Ticker {
 				if time.Now().Hour() == conf.hour && !hourTicker.todayHasRun {
 					log.Info("[FixHourTicker.tick] start")
 					hourTicker.todayHasRun = true
-					hourTicker.lastExecuteDate = timeutil.GetCurrentDate()
+					hourTicker.lastExecuteDate = timeutil.CurrentDate()
 					// 后续: 支持选择 同步 or 异步，目前是同步
 					jobFinishChan := make(chan struct{})
 					go func() {
@@ -126,7 +126,7 @@ func NewFixHourTicker(confFuncArr ...tickerConfFunc) Ticker {
 					}()
 					<-jobFinishChan
 					log.Info("[FixHourTicker.tick] end")
-				} else if timeutil.GetCurrentDate() != hourTicker.lastExecuteDate {
+				} else if timeutil.CurrentDate() != hourTicker.lastExecuteDate {
 					hourTicker.todayHasRun = false
 				}
 			case <-conf.ctx.Done():

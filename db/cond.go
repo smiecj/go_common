@@ -80,7 +80,7 @@ func (arr whereArr) ToSQL() string {
 			// fix-对 value 关键字中有`` -- 作为字段标识, in, not in 这种条件，value 前后不需要加上引号
 			condFormatStr := "%s %s '%s'"
 			if currentCond.Method == conditionMethodIn || currentCond.Method == conditionMethodNotIn ||
-				strings.Contains(currentCond.Value, "`") {
+				strings.Contains(currentCond.Value, "`") || strings.Contains(currentCond.Value, "UNIX_TIMESTAMP") {
 				condFormatStr = "%s %s %s"
 			} else if strings.Contains(currentCond.Value, "'") {
 				condFormatStr = "%s %s \"%s\""

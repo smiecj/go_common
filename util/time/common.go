@@ -4,6 +4,7 @@ package time
 import (
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/Lofanmi/chinese-calendar-golang/calendar"
@@ -28,20 +29,35 @@ var (
 		time.Saturday:  "六",
 		time.Sunday:    "日",
 	}
+
+	monthEngToIntMap = map[string]int{
+		"January":   1,
+		"February":  2,
+		"March":     3,
+		"April":     4,
+		"May":       5,
+		"June":      6,
+		"July":      7,
+		"August":    8,
+		"September": 9,
+		"October":   10,
+		"November":  11,
+		"December":  12,
+	}
 )
 
 // 获取当前时间戳
-func GetCurrentTimestamp() string {
+func CurrentTimestamp() string {
 	return time.Now().Format(normalFormat)
 }
 
 // 获取当前日期
-func GetCurrentDate() string {
+func CurrentDate() string {
 	return time.Now().Format(dateFormat)
 }
 
 // 获取当前分钟
-func GetCurrentMinute() string {
+func CurrentMinute() string {
 	return time.Now().Format(minuteFormat)
 }
 
@@ -58,12 +74,12 @@ func CompareTimestampWithNow(timestamp string) (dur time.Duration, err error) {
 }
 
 // 获取当前时间 指定偏移时间后的时间戳
-func GetCurrentTimeAfterDuration(dur time.Duration) string {
+func CurrentTimeAfterDuration(dur time.Duration) string {
 	return time.Now().Add(dur).Format(normalFormat)
 }
 
 // 获取指定时间戳、指定偏移时间后的时间戳
-func GetTimestampAfterDuration(startTimestamp string, dur time.Duration) (targetTimestamp string, err error) {
+func TimestampAfterDuration(startTimestamp string, dur time.Duration) (targetTimestamp string, err error) {
 	startTime, err := time.Parse(normalFormat, startTimestamp)
 	if nil != err {
 		err = errorcode.BuildErrorWithMsg(errorcode.ParseTimeFailed, err.Error())
@@ -75,7 +91,7 @@ func GetTimestampAfterDuration(startTimestamp string, dur time.Duration) (target
 }
 
 // unix 时间戳（秒）格式转 normal 格式
-func GetTimestampByUnixtimeStr(unixtime string) (targetTimestamp string, err error) {
+func TimestampByUnixtimeStr(unixtime string) (targetTimestamp string, err error) {
 	unixtimeInt, err := strconv.Atoi(unixtime)
 	if nil != err {
 		err = errorcode.BuildErrorWithMsg(errorcode.ParseTimeFailed, err.Error())
@@ -85,15 +101,26 @@ func GetTimestampByUnixtimeStr(unixtime string) (targetTimestamp string, err err
 	return
 }
 
+// unix 时间戳 （秒） 格式转 date 格式
+func DateByUnixtimeStr(unixtime string) (dateStr string, err error) {
+	unixtimeInt, err := strconv.Atoi(unixtime)
+	if nil != err {
+		err = errorcode.BuildErrorWithMsg(errorcode.ParseTimeFailed, err.Error())
+	}
+	targetTime := time.Unix(int64(unixtimeInt), 0)
+	dateStr = targetTime.Format(dateFormat)
+	return
+}
+
 // unix 时间戳（毫秒）格式转 normal 格式
-func GetTimestampByUnixMill(unixMill int) string {
+func TimestampByUnixMill(unixMill int) string {
 	targetTime := time.UnixMilli(int64(unixMill))
 	targetTimestamp := targetTime.Format(normalFormat)
 	return targetTimestamp
 }
 
 // 获取指定日期的星期数
-func GetWeekDayByDate(date string) (time.Weekday, error) {
+func WeekDayByDate(date string) (time.Weekday, error) {
 	t, err := time.Parse(dateFormat, date)
 	if nil != err {
 		return 0, err
@@ -102,7 +129,7 @@ func GetWeekDayByDate(date string) (time.Weekday, error) {
 }
 
 // 获取指定日期的年份数
-func GetYearByDate(date string) (int, error) {
+func YearByDate(date string) (int, error) {
 	t, err := time.Parse(dateFormat, date)
 	if nil != err {
 		return 0, err
@@ -111,7 +138,7 @@ func GetYearByDate(date string) (int, error) {
 }
 
 // 获取指定日期的星期数（中文）
-func GetWeekDayStringByDate(date string) (string, error) {
+func WeekDayStringByDate(date string) (string, error) {
 	t, err := time.Parse(dateFormat, date)
 	if nil != err {
 		return "", err
@@ -120,31 +147,31 @@ func GetWeekDayStringByDate(date string) (string, error) {
 }
 
 // 获取当前日期指定天数之前的日期
-func GetDateBeforeDay(day int) string {
+func DateBeforeDay(day int) string {
 	targetTime := time.Now().Add(-time.Duration(day*24) * time.Hour)
 	return targetTime.Format(dateFormat)
 }
 
 // 获取当前日期指定天数之后的短日期
-func GetShortDateAfterDay(day int) string {
+func ShortDateAfterDay(day int) string {
 	targetTime := time.Now().Add(time.Duration(day*24) * time.Hour)
 	return targetTime.Format(shortDateFormat)
 }
 
 // 获取当前日期指定天数之后的日期
-func GetDateAfterDay(day int) string {
+func DateAfterDay(day int) string {
 	targetTime := time.Now().Add(time.Duration(day*24) * time.Hour)
 	return targetTime.Format(dateFormat)
 }
 
 // 获取当前日期指定天数之后的月份
-func GetMonthAfterDay(day int) string {
+func MonthAfterDay(day int) string {
 	targetTime := time.Now().Add(time.Duration(day*24) * time.Hour)
 	return targetTime.Format(monthFormat)
 }
 
 // 获取指定天数之前的日期（阴历）
-func GetLunarDateBeforeDay(day int) string {
+func LunarDateBeforeDay(day int) string {
 	targetTime := time.Now().Add(-time.Duration(day*24) * time.Hour)
 	lunarObj := calendar.BySolar(int64(targetTime.Year()), int64(targetTime.Month()), int64(targetTime.Day()),
 		00, 00, 00)
@@ -153,7 +180,7 @@ func GetLunarDateBeforeDay(day int) string {
 }
 
 // 获取指定天数之后的短日期（阴历）
-func GetShortLunarDateAfterDay(day int) string {
+func ShortLunarDateAfterDay(day int) string {
 	targetTime := time.Now().Add(time.Duration(day*24) * time.Hour)
 	lunarObj := calendar.BySolar(int64(targetTime.Year()), int64(targetTime.Month()), int64(targetTime.Day()),
 		00, 00, 00)
@@ -161,7 +188,7 @@ func GetShortLunarDateAfterDay(day int) string {
 }
 
 // 获取本周的最后一天（周日）日期
-func GetThisWeekLastDate() string {
+func ThisWeekLastDate() string {
 	currentTime := time.Now()
 	currentWeekDate := currentTime.Weekday()
 	var lastDateDiff int
@@ -175,9 +202,26 @@ func GetThisWeekLastDate() string {
 }
 
 // 获取当天的0点的时间戳, 毫秒格式
-func GetCurrentDateZeroTimestmapMill() int {
+func CurrentDateZeroTimestmapMill() int {
 	currentTime := time.Now()
 	zeroTime := time.Date(currentTime.Year(), currentTime.Month(), currentTime.Day(),
 		0, 0, 0, 0, currentTime.Location())
 	return int(zeroTime.UnixMilli())
+}
+
+// "1 February 2021" to "2021-02-01"
+func TimestampByGoFormat(timestamp string) (string, error) {
+	timestampSplitArr := strings.Split(timestamp, " ")
+	if len(timestampSplitArr) != 3 {
+		return "", errorcode.BuildError(errorcode.ParseTimeFailed)
+	}
+
+	date, month, year := timestampSplitArr[0], timestampSplitArr[1], timestampSplitArr[2]
+	var monthInt int
+	var ok bool
+	if monthInt, ok = monthEngToIntMap[month]; !ok {
+		return "", errorcode.BuildError(errorcode.ParseTimeFailed)
+	}
+	dateInt, _ := strconv.Atoi(date)
+	return fmt.Sprintf("%s-%02d-%02d", year, monthInt, dateInt), nil
 }
