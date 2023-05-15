@@ -109,11 +109,12 @@ func SetNickName(nickName string) func(*mailSendConf) {
 }
 
 // 发送邮件接口实现
-func (impl mailSenderSMTPImpl) Send(setterArr ...mailSendConfSetter) error {
+func (impl *mailSenderSMTPImpl) Send(setterArr ...mailSendConfSetter) error {
 	conf := new(mailSendConf)
 	for _, setter := range setterArr {
 		setter(conf)
 	}
+
 	// default receiver use sender init conf
 	if len(conf.receiverArr) == 0 {
 		conf.receiverArr = strings.Split(strings.TrimSpace(impl.conf.Receiver), receiverSplitor)
@@ -137,7 +138,7 @@ func (impl mailSenderSMTPImpl) Send(setterArr ...mailSendConfSetter) error {
 }
 
 // 发送邮件，调用 smtp 接口逻辑
-func (impl mailSenderSMTPImpl) send(conf *mailSendConf, receiverArr []string) error {
+func (impl *mailSenderSMTPImpl) send(conf *mailSendConf, receiverArr []string) error {
 	auth := smtp.PlainAuth("", impl.conf.Sender, impl.conf.Token, impl.conf.Host)
 	contentType := "Content-Type: text/plain; charset=UTF-8"
 	msg := []byte("To: " + strings.Join(receiverArr, ",") + "\r\nFrom: " + conf.nickName +
@@ -157,7 +158,11 @@ func NewSMTPMailSender(configManager config.Manager) (Sender, error) {
 	mailSenderLock.RLock()
 	senderInitConf := mailSenderInitConf{}
 	configManager.Unmarshal(mailDefaultConfigSpace, &senderInitConf)
-	sender = mailSenderMap[senderInitConf]
+	if senderInitConf.Host == "mock" {
+		sender = &mockMailSender{}
+	} else {
+		sender = mailSenderMap[senderInitConf]
+	}
 	mailSenderLock.RUnlock()
 
 	if nil != sender {

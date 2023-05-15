@@ -7,6 +7,9 @@ mysql:
   port: 3306
   user: root
   password: root
+impala:
+  host: localhost
+  port: 21000
 log:
   level: debug
 http:
@@ -18,3 +21,19 @@ smtp:
   password: token
 monitor:
   port: 12112
+zk:
+  address: localhost:2181
+  home: /
+nacos:
+  host: localhost
+  port: 8848
+  User: nacos
+  Password: nacos
+  namespace_id: xxx-xxx
+apollo:
+  host: localhost
+  port: 8080
+  app_id: SampleApp
+  cluster: dev
+  Secret: xxx
+  default_namespace: application

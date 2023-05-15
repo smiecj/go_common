@@ -46,6 +46,7 @@ var (
 type lockManager struct {
 	connector db.RDBConnector
 	envName   string
+	logger    log.Logger
 	// 当前进程占用的所有 lock 的更新周期类型
 	lockNameIntervalTypeMap map[string]IntervalType
 	mapLock                 sync.RWMutex
@@ -68,6 +69,7 @@ func GetLockManager(connector db.RDBConnector, errorChan chan<- error) *lockMana
 		lockManagerInstance = new(lockManager)
 		lockManagerInstance.connector = connector
 		lockManagerInstance.envName, _ = net.GetLocalIPV4()
+		lockManagerInstance.logger = log.PrefixLogger("lock")
 		lockManagerInstance.errorChan = errorChan
 		lockManagerInstance.lockNameIntervalTypeMap = make(map[string]IntervalType)
 	})
@@ -83,7 +85,7 @@ func (manager *lockManager) Lock(lockName string, intervalType IntervalType, job
 	// 判断当前锁是否已经占用过，不会重复占用
 	manager.mapLock.Lock()
 	if _, ok := manager.lockNameIntervalTypeMap[lockName]; ok {
-		log.Info("[Lock] lock name: %s, 程序已经占用", lockName)
+		manager.logger.Info("lock name: %s, 程序已经占用", lockName)
 		return
 	}
 	manager.lockNameIntervalTypeMap[lockName] = intervalType
@@ -92,35 +94,35 @@ func (manager *lockManager) Lock(lockName string, intervalType IntervalType, job
 	for {
 		lockErr := manager.tryLock(lockName)
 		if nil != lockErr {
-			log.Warn("[Lock] lock: %s, 获取lock乐观锁失败原因: %s", lockName, lockErr.Error())
+			manager.logger.Warn("lock: %s, 获取lock乐观锁失败原因: %s", lockName, lockErr.Error())
 		} else {
-			log.Info("[Lock] lock: %s, 占锁成功！", lockName)
+			manager.logger.Info("lock: %s, 占锁成功！", lockName)
 			break
 		}
 		time.Sleep(expireTimeMap[intervalType])
 	}
 
-	log.Info("[lock] 获取Lock乐观锁成功")
+	manager.logger.Info("获取Lock乐观锁成功")
 
-	log.Info("[Lock] 启动用户任务")
+	manager.logger.Info("启动用户任务")
 	ctx, cancel := context.WithCancel(context.Background())
 	go job(ctx)
 
-	log.Info("[Lock] 启动更新 lock 状态任务")
+	manager.logger.Info("启动更新 lock 状态任务")
 	go func() {
 		updateTimeFailedTime := 0
 		for {
 			time.Sleep(updateIntervalMap[intervalType])
 			updateErr := manager.updateLockTime(lockName)
 			if updateErr != nil {
-				log.Warn("[updateLockTime] master节点更新时间失败, 失败原因: %s", updateErr.Error())
+				manager.logger.Warn("[updateLockTime] master节点更新时间失败, 失败原因: %s", updateErr.Error())
 				updateTimeFailedTime++
 			} else {
 				updateTimeFailedTime = 0
 			}
 			// 连续3次更新状态失败，将认为之前占的锁已经失效，关闭当前的 channel 并返回错误信息
 			if updateTimeFailedTime > 3 {
-				log.Warn("[updateLockTime] lock name: %s, 已经连续3次更新失败，将取消更新，并停止任务", lockName)
+				manager.logger.Warn("[updateLockTime] lock name: %s, 已经连续3次更新失败，将取消更新，并停止任务", lockName)
 				cancel()
 				go func() {
 					// 向调用方发送错误信息

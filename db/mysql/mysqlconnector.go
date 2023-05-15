@@ -25,7 +25,7 @@ const (
 	mysqlConfigDefaultSpace = "mysql"
 
 	// 默认配置: 最大空闲连接数
-	defaultMaxIdleConn = 10
+	// defaultMaxIdleConn = 10
 
 	// 错误信息
 	insertUnknownObjectType = "unknown to insert object type"
@@ -47,6 +47,8 @@ type MySQLConnectOption struct {
 	MaxLifeTime int    `yaml:"max_life_time" json:"maxLifeTime"`
 	MaxIdleTime int    `yaml:"max_idle_time" json:"maxIdleTime"`
 	MaxIdleConn int    `yaml:"max_idle_conn" json:"maxIdleConn"`
+	// 特殊情况: 同一个数据库地址 也需要生成多个连接池，此时可通过随机数生成 id
+	Id string
 }
 
 // 对mysql 配置进行检查，不合理的配置配默认值
@@ -56,14 +58,17 @@ func (option *MySQLConnectOption) check() {
 		option.MaxIdleTime = option.MaxLifeTime
 	}
 
-	if option.MaxIdleConn == 0 {
-		option.MaxIdleConn = defaultMaxIdleConn
-	}
+	// sql.go 中有默认最大空闲连接数限制，这里不需要多余的默认配置 (defaultMaxIdleConns)
+	// https://github.com/golang/go/blob/master/src/database/sql/sql.go#L912
+	// if option.MaxIdleConn <= 0 {
+	// 	option.MaxIdleConn = defaultMaxIdleConn
+	// }
 }
 
 // mysql 存储
 type mysqlConnector struct {
 	db     *gorm.DB
+	log    log.Logger
 	option MySQLConnectOption
 }
 
@@ -109,22 +114,22 @@ func (connector *mysqlConnector) Insert(funcArr ...RDBInsertConfigFunc) (ret Upd
 			}
 			toInsertArr = slice.Interface()
 		} else {
-			log.Error("[mysqlConnector.Insert] %s", insertUnknownObjectType)
+			connector.log.Error("[Insert] %s", insertUnknownObjectType)
 			return ret, errorcode.BuildErrorWithMsg(errorcode.DBExecFailed, insertUnknownObjectType)
 		}
 		// todo: insert 不能选定字段。可能要想其他办法进行插入
 		dbRet = connector.db.Table(action.GetSpaceName()).Select(insertKeyArr).Create(toInsertArr)
 	} else {
-		log.Warn("[mysqlConnector.Insert] To insert data is empty")
+		connector.log.Warn("[Insert] To insert data is empty")
 		return ret, nil
 	}
 
 	ret.AffectedRows, err = int(dbRet.RowsAffected), dbRet.Error
 
 	if nil != err {
-		log.Error("[mysqlConnector.Insert] Insert failed: table: %s, reason: %s", action.GetSpaceName(), err.Error())
+		connector.log.Error("[Insert] Insert failed: table: %s, reason: %s", action.GetSpaceName(), err.Error())
 	} else {
-		log.Info("[mysqlConnector.Insert] Insert success: %s, insert rows: %d", action.GetSpaceName(), ret.AffectedRows)
+		connector.log.Info("[Insert] Insert success: %s, insert rows: %d", action.GetSpaceName(), ret.AffectedRows)
 	}
 	return
 }
@@ -156,16 +161,16 @@ func (connector *mysqlConnector) Update(funcArr ...RDBUpdateConfigFunc) (ret Upd
 		}
 		dbRet = connector.db.Table(action.GetSpaceName()).Where(condition.WhereArr.ToSQL()).Select(searchKeyArr).Updates(objectArr[0])
 	} else {
-		log.Warn("[mysqlConnector.Update] To update data is empty")
+		connector.log.Warn("[Update] To update data is empty")
 		return ret, nil
 	}
 
 	ret.AffectedRows, err = int(dbRet.RowsAffected), dbRet.Error
 
 	if nil != err {
-		log.Error("[mysqlConnector.Update] Update failed, table: %s, reason: %s", action.GetSpaceName(), err.Error())
+		connector.log.Error("[Update] Update failed, table: %s, reason: %s", action.GetSpaceName(), err.Error())
 	} else {
-		log.Info("[mysqlConnector.Update] Update success: %s, update rows: %d", action.GetSpaceName(), ret.AffectedRows)
+		connector.log.Info("[Update] Update success: %s, update rows: %d", action.GetSpaceName(), ret.AffectedRows)
 	}
 	return
 }
@@ -183,9 +188,9 @@ func (connector *mysqlConnector) Delete(funcArr ...RDBDeleteConfigFunc) (ret Upd
 	ret.AffectedRows, err = int(dbRet.RowsAffected), dbRet.Error
 
 	if nil != err {
-		log.Error("[mysqlConnector.Delete] Delete failed, table: %s, reason: %s", action.GetSpaceName(), err.Error())
+		connector.log.Error("[Delete] Delete failed, table: %s, reason: %s", action.GetSpaceName(), err.Error())
 	} else {
-		log.Info("[mysqlConnector.Delete] Delete success: %s, update rows: %d", action.GetSpaceName(), ret.AffectedRows)
+		connector.log.Info("[Delete] Delete success: %s, update rows: %d", action.GetSpaceName(), ret.AffectedRows)
 	}
 	return
 }
@@ -205,9 +210,9 @@ func (connector *mysqlConnector) Backup(funcArr ...RDBBackupConfigFunc) (ret Upd
 	ret.AffectedRows, err = int(dbRet.RowsAffected), dbRet.Error
 
 	if nil != err {
-		log.Error("[mysqlConnector.Backup] Backup failed, table: %s -> %s, reason: %s", action.GetSourceSpaceName(), action.GetTargetSpaceName(), err.Error())
+		connector.log.Error("[Backup] Backup failed, table: %s -> %s, reason: %s", action.GetSourceSpaceName(), action.GetTargetSpaceName(), err.Error())
 	} else {
-		log.Info("[mysqlConnector.Backup] Backup success: %s -> %s, update rows: %d", action.GetSourceSpaceName(), action.GetTargetSpaceName(), ret.AffectedRows)
+		connector.log.Info("[Backup] Backup success: %s -> %s, update rows: %d", action.GetSourceSpaceName(), action.GetTargetSpaceName(), ret.AffectedRows)
 	}
 	return
 }
@@ -228,7 +233,7 @@ func (connector *mysqlConnector) Search(funcArr ...RDBSearchConfigFunc) (ret Sea
 		Select(keyArr).Where(condition.WhereArr.ToSQL()).Count(&count)
 
 	if nil != dbRet.Error {
-		log.Error("[mysqlConnector.Search] Count failed, table: %s, reason: %s", action.GetSpaceName(), dbRet.Error.Error())
+		connector.log.Error("[Search] Count failed, table: %s, reason: %s", action.GetSpaceName(), dbRet.Error.Error())
 		return ret, dbRet.Error
 	} else {
 		ret.Total = int(count)
@@ -268,9 +273,9 @@ func (connector *mysqlConnector) Search(funcArr ...RDBSearchConfigFunc) (ret Sea
 	ret.Len, err = int(dbRet.RowsAffected), dbRet.Error
 
 	if nil != err {
-		log.Error("[mysqlConnector.Select] Select failed, table: %s, reason: %s", action.GetSpaceName(), err.Error())
+		connector.log.Error("[Select] Select failed, table: %s, reason: %s", action.GetSpaceName(), err.Error())
 	} else {
-		log.Info("[mysqlConnector.Select] Select success: %s, search rows: %d", action.GetSpaceName(), ret.Len)
+		connector.log.Info("[Select] Select success: %s, search rows: %d", action.GetSpaceName(), ret.Len)
 	}
 	return
 }
@@ -290,9 +295,9 @@ func (connector *mysqlConnector) Count(funcArr ...RDBSearchConfigFunc) (ret Sear
 	ret.Len = ret.Total
 
 	if nil != err {
-		log.Error("[mysqlConnector.Count] Count failed, table: %s, reason: %s", action.GetSpaceName(), err.Error())
+		connector.log.Error("[Count] Count failed, table: %s, reason: %s", action.GetSpaceName(), err.Error())
 	} else {
-		log.Info("[mysqlConnector.Count] Count success: %s, total: %d", action.GetSpaceName(), ret.Total)
+		connector.log.Info("[Count] Count success: %s, total: %d", action.GetSpaceName(), ret.Total)
 	}
 	return
 }
@@ -306,7 +311,7 @@ func (connector *mysqlConnector) Distinct(funcArr ...RDBSearchConfigFunc) (ret S
 	// distinct 必须指定需要查询的列名
 	keyArr := action.GetKeyArr()
 	if len(keyArr) == 0 {
-		return ret, errorcode.BuildErrorWithMsg(errorcode.DBParamInvalid, "[mysqlConnector.Distinct] distinct must set key array")
+		return ret, errorcode.BuildErrorWithMsg(errorcode.DBParamInvalid, "[Distinct] distinct must set key array")
 	}
 
 	fieldValueArr := make([]string, 0)
@@ -329,7 +334,7 @@ func (connector *mysqlConnector) Distinct(funcArr ...RDBSearchConfigFunc) (ret S
 		Distinct().Pluck(distinctColumn, &fieldValueArr)
 	err = dbRet.Error
 	if nil != dbRet.Error {
-		log.Error("[mysqlConnector.Distinct] Distinct %s get field value failed: %s", action.GetSpaceName(), err.Error())
+		connector.log.Error("[Distinct] Distinct %s get field value failed: %s", action.GetSpaceName(), err.Error())
 		return ret, err
 	}
 
@@ -347,6 +352,19 @@ func (connector *mysqlConnector) Distinct(funcArr ...RDBSearchConfigFunc) (ret S
 	return
 }
 
+// mysql: stat
+func (connector *mysqlConnector) Stat() (ret DBStat, err error) {
+	db, err := connector.db.DB()
+	if nil != err {
+		connector.log.Warn("[Stat] get db stat err: %s", err.Error())
+		return ret, errorcode.BuildErrorWithMsg(errorcode.DBStatFailed, err.Error())
+	}
+	ret.OpenConnections = db.Stats().OpenConnections
+	ret.Idle = db.Stats().Idle
+	ret.InUse = db.Stats().InUse
+	return
+}
+
 func (connector *mysqlConnector) Close() error {
 	mysqlConnectorLock.Lock()
 	delete(mysqlConnectorMap, connector.option)
@@ -354,15 +372,15 @@ func (connector *mysqlConnector) Close() error {
 
 	db, err := connector.db.DB()
 	if nil != err {
-		log.Error("[mysqlConnector.Close] get db failed: " + err.Error())
-		return errorcode.BuildErrorWithMsg(errorcode.DBCloseFailed, err.Error())
+		connector.log.Error("[Close] get db failed: " + err.Error())
+		return errorcode.BuildErrorWithMsg(errorcode.DBStatFailed, err.Error())
 	}
 	err = db.Close()
 	if nil != err {
-		log.Error("[mysqlConnector.Close] close failed: " + err.Error())
+		connector.log.Error("[Close] close failed: " + err.Error())
 		return errorcode.BuildErrorWithMsg(errorcode.DBCloseFailed, err.Error())
 	}
-	log.Info("[mysqlConnector.Close] close success")
+	connector.log.Info("[Close] close success")
 	return nil
 }
 
@@ -415,7 +433,6 @@ func getMySQLConnector(option MySQLConnectOption) (RDBConnector, error) {
 	connDB.SetMaxIdleConns(option.MaxIdleConn)
 	connDB.SetConnMaxIdleTime(time.Second * time.Duration(option.MaxIdleTime))
 	connDB.SetConnMaxLifetime(time.Second * time.Duration(option.MaxLifeTime))
-
 	err = db.Exec("SELECT 1;").Error
 	if nil != err {
 		log.Error("[GetMySQLConnector] Exec mysql check sql failed, please check config: %s, err: %s", connectStr, err.Error())
@@ -424,6 +441,7 @@ func getMySQLConnector(option MySQLConnectOption) (RDBConnector, error) {
 	mysqlConnector := new(mysqlConnector)
 	mysqlConnector.db = db
 	mysqlConnector.option = option
+	mysqlConnector.log = log.PrefixLogger("mysqlConnector")
 	mysqlConnectorMap[option] = mysqlConnector
 	return mysqlConnector, nil
 }

@@ -23,7 +23,7 @@ var (
 // 目前没有具体调度逻辑，只要不报错即算通过
 func TestFixHourTicker(t *testing.T) {
 	for _, currentTickerConf := range tickerConfArr {
-		ticker := NewFixHourTicker(SetHour(currentTickerConf.hour), SetFunc(currentTickerConf.f), SetContext(currentTickerConf.ctx))
+		ticker := NewFixHourTicker(SetHour(currentTickerConf.hour), SetFunc(currentTickerConf.f), SetContext(currentTickerConf.ctx), IgnoreError())
 		ticker.Start()
 		require.Equal(t, StatusRunning, ticker.Status())
 		ticker.Stop()

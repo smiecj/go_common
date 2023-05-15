@@ -16,7 +16,7 @@ const (
 )
 
 var (
-	zkClientMap  map[zkConnectOption]Client
+	zkClientMap  = make(map[zkConnectOption]Client)
 	zkClientLock sync.RWMutex
 )
 
@@ -31,6 +31,7 @@ type Client interface {
 type zkClient struct {
 	option     zkConnectOption
 	connection *zk.Conn
+	logger     log.Logger
 }
 
 type emptyLogger struct{}
@@ -42,7 +43,7 @@ func (client *zkClient) init() error {
 	client.connection = c
 
 	if nil != err {
-		log.Error("[zkClient.init] zk connect %s failed: %s", client.option.Address, err.Error())
+		client.logger.Error("[init] zk connect %s failed: %s", client.option.Address, err.Error())
 		return errorcode.BuildError(errorcode.ZKConnectFailed)
 	}
 
@@ -52,32 +53,32 @@ func (client *zkClient) init() error {
 }
 
 func (client *zkClient) List(funcArr ...confFunc) ([]string, error) {
-	conf := client.getConf(funcArr...)
+	conf := getConf(funcArr...)
 	listNodes, _, err := client.connection.Children(conf.path)
 	if nil != err {
-		log.Error("[zkClient.List] zk list failed: %s", err.Error())
+		client.logger.Error("[List] zk list failed: %s", err.Error())
 		return nil, errorcode.BuildError(errorcode.ZKListFailed)
 	}
 	return listNodes, nil
 }
 
 func (client *zkClient) Create(funcArr ...confFunc) error {
-	conf := client.getConf(funcArr...)
+	conf := getConf(funcArr...)
 	// path string, data []byte, flags int32, acl []ACL
 	_, err := client.connection.Create(conf.path, []byte(conf.data), conf.mode, conf.permission)
 	if nil != err {
-		log.Error("[zkClient.Create] zk create node %s failed: %s", conf.path, err.Error())
+		client.logger.Error("[Create] zk create node %s failed: %s", conf.path, err.Error())
 		return errorcode.BuildError(errorcode.ZKCreateFailed)
 	}
 	return nil
 }
 
 func (client *zkClient) Delete(funcArr ...confFunc) error {
-	conf := client.getConf(funcArr...)
+	conf := getConf(funcArr...)
 	// path string, data []byte, flags int32, acl []ACL
 	err := client.connection.Delete(conf.path, -1)
 	if nil != err {
-		log.Error("[zkClient.Delete] zk delete node %s failed: %s", conf.path, err.Error())
+		client.logger.Error("[Delete] zk delete node %s failed: %s", conf.path, err.Error())
 		return errorcode.BuildError(errorcode.ZKCreateFailed)
 	}
 	return nil
@@ -85,7 +86,7 @@ func (client *zkClient) Delete(funcArr ...confFunc) error {
 
 // deleteall: refer: https://github.com/go-zookeeper/zk/issues/52
 func (client *zkClient) DeleteAll(funcArr ...confFunc) error {
-	conf := client.getConf(funcArr...)
+	conf := getConf(funcArr...)
 	// to prevent delete all data, not allow delete root
 	if conf.path == root {
 		return errorcode.BuildError(errorcode.ZKDeleteRootFailed)
@@ -97,7 +98,7 @@ func (client *zkClient) DeleteAll(funcArr ...confFunc) error {
 		for _, currentChild := range currentChildArr {
 			childArr, _, err := client.connection.Children(currentChild)
 			if nil != err {
-				log.Error("[zkClient.DeleteAll] zk get child of %s failed: %s", currentChild, err.Error())
+				client.logger.Error("[DeleteAll] zk get child of %s failed: %s", currentChild, err.Error())
 				return errorcode.BuildErrorWithMsg(errorcode.ZKDeleteFailed, err.Error())
 			}
 			for index := 0; index < len(childArr); index++ {
@@ -112,7 +113,7 @@ func (client *zkClient) DeleteAll(funcArr ...confFunc) error {
 		currentChild := allChildArr[index]
 		err := client.connection.Delete(currentChild, -1)
 		if nil != err {
-			log.Error("[zkClient.DeleteAll] zk delete node %s failed: %s", currentChild, err.Error())
+			client.logger.Error("[DeleteAll] zk delete node %s failed: %s", currentChild, err.Error())
 			return errorcode.BuildErrorWithMsg(errorcode.ZKCreateFailed, err.Error())
 		}
 	}
@@ -123,14 +124,6 @@ func (client *zkClient) Status() string {
 	return "todo"
 }
 
-func (client *zkClient) getConf(funcArr ...confFunc) *conf {
-	conf := defaultConf()
-	for _, currentFunc := range funcArr {
-		currentFunc(conf)
-	}
-	return conf
-}
-
 // 获取zk连接
 func GetZKonnector(configManager config.Manager) (Client, error) {
 	var client Client
@@ -139,11 +132,11 @@ func GetZKonnector(configManager config.Manager) (Client, error) {
 	option := zkConnectOption{}
 	configManager.Unmarshal(zkConfigDefaultSpace, &option)
 
-	if nil == zkClientMap {
-		zkClientMap = make(map[zkConnectOption]Client)
+	if option.Address == "mock" {
+		client, _ = getZKonnectorMock()
+	} else {
+		client = zkClientMap[option]
 	}
-
-	client = zkClientMap[option]
 	zkClientLock.RUnlock()
 
 	if nil != client {
@@ -155,6 +148,7 @@ func GetZKonnector(configManager config.Manager) (Client, error) {
 
 	zkClient := new(zkClient)
 	zkClient.option = option
+	zkClient.logger = log.PrefixLogger("zkClient")
 	zkClient.init()
 	zkClientMap[option] = zkClient
 	return zkClient, nil

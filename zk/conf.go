@@ -70,3 +70,11 @@ func defaultConf() *conf {
 	conf.permission = zk.WorldACL(zk.PermAll)
 	return conf
 }
+
+func getConf(funcArr ...confFunc) *conf {
+	conf := defaultConf()
+	for _, currentFunc := range funcArr {
+		currentFunc(conf)
+	}
+	return conf
+}

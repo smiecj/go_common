@@ -155,15 +155,20 @@ connector, err := GetImpalaConnector(ImpalaConnectOption{Host: "impala_host", Po
 ret, err := connector.Count(db.SearchSetSpace(db_name, table_name))
 ```
 
-## 自定义配置 yaml 文件解析
-### config file format
+## 配置解析
+
+### yaml 配置解析
+
+配置文件格式: yaml
+```yaml
 db: -- space
   mysql_host: localhost -- key: value
   mysql_port: 3306
   db_arr: 
     - school
+```
 
-### yaml 配置解析
+解析配置:
 ```
 // 从本地 yaml 配置文件 获取 配置管理
 config, err := config.GetYamlConfigManager(config_file_name)
@@ -284,7 +289,7 @@ import tickerutil "github.com/smiecj/go_common/util/time/ticker"
 ticker := tickerutil.NewFixHourTicker(8, tickerutil.SetFunc(func() error {dosomething...}))
 ticker.Start()
 // 处理错误流
-// 如果设置了不需要处理错误 (ticker.SetIsIgnoreError), 则可以忽略下面的逻辑
+// 如果设置了不需要处理错误 (ticker.IgnoreError), 则可以忽略 error chan 的处理
 go func() {
   for e := range ticker.Error() {
     log.Warn("[ticker] error: %s", e.Error())
@@ -321,3 +326,7 @@ isUsed := net.CheckLocalPortIsUsed(22)
 ## db
 - mysql 数据操作，超过指定数据量自动分批（防止一次性删除/插入过多数据）
 - mysql 支持 group by 、 distinct
+
+## 配置
+
+监听配置更新

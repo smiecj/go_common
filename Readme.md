@@ -159,14 +159,19 @@ ret, err := connector.Count(db.SearchSetSpace(db_name, table_name))
 ```
 
 ## config manager
-### config file format
+
+### yaml config manager
+
+config file format: yaml
+```yaml
 db: -- space
   mysql_host: localhost -- key: value
   mysql_port: 3306
   db_arr: 
     - school
+```
 
-### yaml config manager
+parse config:
 ```
 // get config manager
 config, err := config.GetYamlConfigManager(config_file_name)
@@ -286,7 +291,7 @@ import tickerutil "github.com/smiecj/go_common/util/time/ticker"
 ticker := tickerutil.NewFixHourTicker(8, tickerutil.SetFunc(func() error {dosomething...}))
 ticker.Start()
 // handle error chan
-// if you set ignore error true (ticker.SetIsIgnoreError), then you don't need to consume error chan
+// if you set ignore error true (ticker.IgnoreError), then you don't need to consume error chan
 go func() {
   for e := range ticker.Error() {
     log.Warn("[ticker] error: %s", e.Error())

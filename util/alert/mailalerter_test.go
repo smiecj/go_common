@@ -3,7 +3,8 @@ package alert
 import (
 	"testing"
 
-	"github.com/smiecj/go_common/config"
+	yamlconfig "github.com/smiecj/go_common/config/yaml"
+	"github.com/smiecj/go_common/util/file"
 	"github.com/smiecj/go_common/util/mail"
 	"github.com/stretchr/testify/require"
 )
@@ -11,10 +12,12 @@ import (
 const (
 	testAlertTitle = "alert title"
 	testAlertMsg   = "alert msg"
+
+	localConfigFile = "conf_local.yaml"
 )
 
 func TestSendMail(t *testing.T) {
-	configManager, err := config.GetYamlConfigManager("/tmp/mailconf.yml")
+	configManager, err := yamlconfig.GetYamlConfigManager(file.FindFilePath(localConfigFile))
 	require.Empty(t, err)
 
 	sender, err := mail.NewSMTPMailSender(configManager)
