@@ -12,7 +12,7 @@ package config
  */
 type Manager interface {
 	Get(string, string) (interface{}, error)
-	GetSpace(string) (space, error)
+	GetSpace(string) (Space, error)
 	GetAllSpaceName() ([]string, error)
 	Set(string, string, interface{}) error
 	Unmarshal(string, interface{}) error
@@ -20,7 +20,7 @@ type Manager interface {
 }
 
 // 配置空间
-type space interface {
+type Space interface {
 	Get(string) (interface{}, error)
 	GetAllKey() ([]string, error)
 	Set(string, interface{}) error

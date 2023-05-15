@@ -1,10 +1,11 @@
-package config
+package yaml
 
 import (
 	"io/ioutil"
 	"os"
 	"sync"
 
+	config "github.com/smiecj/go_common/config"
 	"github.com/smiecj/go_common/errorcode"
 	"github.com/smiecj/go_common/util/log"
 
@@ -13,13 +14,13 @@ import (
 
 var (
 	yamlConfigMapLock sync.RWMutex
-	yamlConfigMap     map[string]Manager
+	yamlConfigMap     map[string]config.Manager
 )
 
 // yaml config manager
 type yamlManager struct {
 	filePath string
-	spaceMap map[string]space
+	spaceMap map[string]config.Space
 }
 
 // yaml config space
@@ -69,8 +70,8 @@ func (space *yamlSpace) Unmarshal(obj interface{}) error {
 }
 
 // yaml config init
-func (config *yamlManager) init() (err error) {
-	file, err := os.Open(config.filePath)
+func (manager *yamlManager) init() (err error) {
+	file, err := os.Open(manager.filePath)
 	if nil != err {
 		return
 	}
@@ -88,10 +89,10 @@ func (config *yamlManager) init() (err error) {
 	}
 
 	// 对每一层配置 都初始化一个 space
-	config.spaceMap = make(map[string]space)
+	manager.spaceMap = make(map[string]config.Space)
 	for spaceName, configMap := range fullConfigMap {
 		currentSpace := yamlSpace{configMap: configMap}
-		config.spaceMap[spaceName] = &currentSpace
+		manager.spaceMap[spaceName] = &currentSpace
 	}
 	return
 }
@@ -115,7 +116,7 @@ func (config *yamlManager) GetAllSpaceName() (retArr []string, err error) {
 }
 
 // yaml config get space
-func (config *yamlManager) GetSpace(spaceName string) (space space, err error) {
+func (config *yamlManager) GetSpace(spaceName string) (space config.Space, err error) {
 	space, err = config.getSpace(spaceName)
 	if nil != err {
 		return
@@ -142,7 +143,7 @@ func (config *yamlManager) Unmarshal(spaceName string, obj interface{}) error {
 }
 
 // common method: get space
-func (config *yamlManager) getSpace(spaceName string) (space, error) {
+func (config *yamlManager) getSpace(spaceName string) (config.Space, error) {
 	space := config.spaceMap[spaceName]
 	if nil == space {
 		return nil, errorcode.BuildError(errorcode.SpaceNotExist)
@@ -156,11 +157,11 @@ func (config *yamlManager) Update() error {
 }
 
 // 获取 yaml 配置中心单例
-func GetYamlConfigManager(filePath string) (Manager, error) {
-	var manager Manager
+func GetYamlConfigManager(filePath string) (config.Manager, error) {
+	var manager config.Manager
 	yamlConfigMapLock.RLock()
 	if nil == yamlConfigMap {
-		yamlConfigMap = make(map[string]Manager)
+		yamlConfigMap = make(map[string]config.Manager)
 	}
 	manager = yamlConfigMap[filePath]
 	yamlConfigMapLock.RUnlock()

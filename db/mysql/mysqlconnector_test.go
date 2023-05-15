@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/smiecj/go_common/config"
+	yamlconfig "github.com/smiecj/go_common/config/yaml"
 	. "github.com/smiecj/go_common/db"
 	"github.com/smiecj/go_common/util/file"
 	"github.com/stretchr/testify/require"
@@ -32,27 +32,6 @@ var (
 )
 
 // test mysql struct
-/*
-CREATE TABLE `temp`.`test_class` (
-  `id` bigint(20) NOT NULL AUTO_INCREMENT,
-  `name` varchar(32) NOT NULL COMMENT 'class name',
-   PRIMARY KEY (`id`),
-  KEY `name_index` (`name`)
-) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4;
-INSERT INTO temp.test_class(name) VALUES('grade1'), ('grade2'), ('grade3');
-
-CREATE TABLE `temp`.`test_student` (
-  `id` bigint(20) NOT NULL AUTO_INCREMENT,
-  `name` varchar(32) NOT NULL COMMENT 'student name',
-  `class_id` bigint(20) COMMENT 'class id',
-   PRIMARY KEY (`id`),
-  KEY `name_index` (`name`)
-) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4;
-
-CREATE TABLE `temp`.`test_student_bak` (
-  ......)
-INSERT INTO temp.test_student(name, class_id) VALUES('xiaoming', 1), ('xiaohong', 2), ('xiaolin', 2);
-*/
 type testStudent struct {
 	Name    string `gorm:"column:name"`
 	ClassId int    `gorm:"column:class_id"`
@@ -78,7 +57,7 @@ func (slice *testStudentWithClassSlice) getFields() []string {
 
 // mysql db 连接器完整测试
 func TestMySQLConnector(t *testing.T) {
-	configManager, err := config.GetYamlConfigManager(file.FindFilePath(*configPath))
+	configManager, err := yamlconfig.GetYamlConfigManager(file.FindFilePath(*configPath))
 	require.Empty(t, err)
 	connector, err := GetMySQLConnector(configManager)
 	require.Empty(t, err)

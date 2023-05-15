@@ -36,6 +36,7 @@ type ImpalaConnectOption struct {
 // impala 连接器
 type impalaConnector struct {
 	innerConnector driver.Connector
+	log            log.Logger
 }
 
 // 插入: 暂不实现
@@ -76,7 +77,7 @@ func (connector *impalaConnector) Count(funcArr ...RDBSearchConfigFunc) (ret Sea
 	ctx := context.Background()
 	rows, err := db.QueryContext(ctx, "SELECT COUNT(*) FROM "+action.GetSpaceName())
 	if err != nil {
-		log.Warn("[impalaConnector.Count] Count failed: %s", err.Error())
+		connector.log.Warn("[Count] Count failed: %s", err.Error())
 		return ret, errorcode.BuildErrorWithMsg(errorcode.DBExecFailed, err.Error())
 	}
 	defer rows.Close()
@@ -86,7 +87,7 @@ func (connector *impalaConnector) Count(funcArr ...RDBSearchConfigFunc) (ret Sea
 		rows.Scan(&dataCount)
 	}
 	ret.Total = dataCount
-	log.Info("[impalaConnector.Count] Count success: %s, total: %d", action.GetSpaceName(), ret.Total)
+	connector.log.Info("[Count] Count success: %s, total: %d", action.GetSpaceName(), ret.Total)
 	return
 }
 
@@ -99,6 +100,11 @@ func (connector *impalaConnector) Distinct(funcArr ...RDBSearchConfigFunc) (ret 
 func (connector *impalaConnector) Close() error {
 	return nil
 	// return errorcode.BuildErrorWithMsg(errorcode.NotImplement, "[impalaConnector.Close] not implement")
+}
+
+// impala: stat
+func (connector *impalaConnector) Stat() (ret DBStat, err error) {
+	return ret, errorcode.BuildErrorWithMsg(errorcode.DBStatFailed, err.Error())
 }
 
 func GetImpalaConnector(configManager config.Manager) (RDBConnector, error) {
@@ -118,7 +124,12 @@ func getImpalaConnector(option ImpalaConnectOption) (RDBConnector, error) {
 	if nil == impalaConnectorMap {
 		impalaConnectorMap = make(map[ImpalaConnectOption]RDBConnector)
 	}
-	connector = impalaConnectorMap[option]
+	if option.Host == "mock" {
+		connector = &mockImpalaConnector{}
+	} else {
+		connector = impalaConnectorMap[option]
+	}
+
 	impalaConnectorLock.RUnlock()
 
 	if nil != connector {
@@ -146,6 +157,7 @@ func getImpalaConnector(option ImpalaConnectOption) (RDBConnector, error) {
 
 	ret := new(impalaConnector)
 	ret.innerConnector = innerConnector
+	ret.log = log.PrefixLogger("impalaConnector")
 	impalaConnectorMap[option] = ret
 	return ret, nil
 }

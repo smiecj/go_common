@@ -240,6 +240,11 @@ func (connector *localFileConnector) Close() error {
 	return nil
 }
 
+// stat
+func (connector *localFileConnector) Stat() (ret DBStat, err error) {
+	return ret, errorcode.BuildErrorWithMsg(errorcode.DBStatFailed, err.Error())
+}
+
 // 公共方法: 获取需要操作的文件的绝对路径
 func (connector *localFileConnector) getFileAbsolutePath(spaceName string) string {
 	return fmt.Sprintf("%s%s%s", connector.localFolderPath, string(os.PathSeparator), spaceName)

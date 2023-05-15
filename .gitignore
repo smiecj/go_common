@@ -20,3 +20,6 @@ coverprofile.cov
 
 # vulncheck
 vulncheck.*
+
+# nacos cache
+config/nacos/cache/

@@ -3,13 +3,18 @@ package mail
 import (
 	"testing"
 
-	"github.com/smiecj/go_common/config"
+	yamlconfig "github.com/smiecj/go_common/config/yaml"
+	"github.com/smiecj/go_common/util/file"
 	"github.com/stretchr/testify/require"
+)
+
+const (
+	localConfigFile = "conf_local.yaml"
 )
 
 // 测试 通过 SMTPMailSender 发送一封邮件
 func TestSendMail(t *testing.T) {
-	configManager, err := config.GetYamlConfigManager("/tmp/mailconf.yml")
+	configManager, err := yamlconfig.GetYamlConfigManager(file.FindFilePath(localConfigFile))
 	require.Empty(t, err)
 
 	sender, err := NewSMTPMailSender(configManager)

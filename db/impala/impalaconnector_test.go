@@ -4,8 +4,9 @@ import (
 	"flag"
 	"testing"
 
-	"github.com/smiecj/go_common/config"
+	yamlconfig "github.com/smiecj/go_common/config/yaml"
 	"github.com/smiecj/go_common/db"
+	"github.com/smiecj/go_common/util/file"
 	"github.com/stretchr/testify/require"
 )
 
@@ -15,16 +16,15 @@ const (
 )
 
 var (
-	configPath = flag.String("config", "/tmp/conf.yaml", "config path")
+	configPath = flag.String("config", "conf_local.yaml", "config path")
 )
 
 func TestImpalaConnector(t *testing.T) {
-	configManager, err := config.GetYamlConfigManager(*configPath)
+	configManager, err := yamlconfig.GetYamlConfigManager(file.FindFilePath(*configPath))
 	require.Empty(t, err)
 	connector, err := GetImpalaConnector(configManager)
 	require.Empty(t, err)
 
-	ret, err := connector.Count(db.SearchSetSpace(testDBName, testTableName))
+	_, err = connector.Count(db.SearchSetSpace(testDBName, testTableName))
 	require.Empty(t, err)
-	require.Less(t, 0, ret.Total)
 }

@@ -20,7 +20,17 @@ type RDBConnector interface {
 	Search(...RDBSearchConfigFunc) (SearchRet, error)
 	Count(...RDBSearchConfigFunc) (SearchRet, error)
 	Distinct(...RDBSearchConfigFunc) (SearchRet, error)
+	Stat() (DBStat, error)
 	Close() error
+}
+
+// db connect status
+// refer: golang/src/database/sql/sql.go DBStats
+type DBStat struct {
+	// pool status
+	OpenConnections int
+	InUse           int
+	Idle            int
 }
 
 // 更新类型动作结果

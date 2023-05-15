@@ -131,7 +131,9 @@ func NewFixHourTicker(confFuncArr ...tickerConfFunc) Ticker {
 				}
 			case <-conf.ctx.Done():
 				hourTicker.ticker.Stop()
-				close(hourTicker.errorChan)
+				if !conf.isIgnoreError {
+					close(hourTicker.errorChan)
+				}
 			}
 		}
 	}
@@ -169,9 +171,9 @@ func SetContext(ctx context.Context) tickerConfFunc {
 
 // 设置忽略 error，这样调用方不再需要处理 Error() 返回的 chan
 // 后续: error chan 使用懒加载的方式，节省空间
-func SetIsIgnoreError(isIgnoreError bool) tickerConfFunc {
+func IgnoreError() tickerConfFunc {
 	return func(conf *tickerConf) error {
-		conf.isIgnoreError = isIgnoreError
+		conf.isIgnoreError = true
 		return nil
 	}
 }

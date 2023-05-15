@@ -135,6 +135,11 @@ func (connector *localMemoryConnector) Close() error {
 	return nil
 }
 
+// stat
+func (connector *localMemoryConnector) Stat() (ret DBStat, err error) {
+	return ret, errorcode.BuildErrorWithMsg(errorcode.DBStatFailed, err.Error())
+}
+
 // 实现本地内存连接器
 func GetLocalMemoryConnector() (RDBConnector, error) {
 	localMemoryConnectorOnce.Do(func() {
