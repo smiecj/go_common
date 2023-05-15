@@ -174,7 +174,7 @@ func (manager *lockManager) tryLock(lockName string) error {
 		}
 	} else {
 		// 没有锁记录, 直接插入锁
-		newLock := lock{Name: lockName, UpdateTime: timeutil.GetCurrentTimestamp(), Env: localEnv}
+		newLock := lock{Name: lockName, UpdateTime: timeutil.CurrentTimestamp(), Env: localEnv}
 		insertRet, dbErr := connector.Insert(
 			db.InsertSetSpace(dbMeta, tableLock),
 			db.InsertAddKeyArr([]string{"name", "update_time", "env"}),
@@ -208,7 +208,7 @@ func (manager *lockManager) updateLockVersion(oldLock lock) error {
 	// copy lock
 	newLock := oldLock
 	newLock.Version++
-	newLock.UpdateTime, newLock.Env = timeutil.GetCurrentTimestamp(), manager.envName
+	newLock.UpdateTime, newLock.Env = timeutil.CurrentTimestamp(), manager.envName
 
 	updateRet, dbErr := manager.connector.Update(
 		db.UpdateSetSpace(dbMeta, tableLock),
@@ -232,7 +232,7 @@ func (manager *lockManager) updateLockVersion(oldLock lock) error {
  * 仅更新时间，保活作用
  */
 func (manager *lockManager) updateLockTime(lockName string) error {
-	lock := lock{Name: lockName, UpdateTime: timeutil.GetCurrentTimestamp(), Env: manager.envName}
+	lock := lock{Name: lockName, UpdateTime: timeutil.CurrentTimestamp(), Env: manager.envName}
 	updateRet, dbErr := manager.connector.Update(
 		db.UpdateSetSpace(dbMeta, tableLock),
 		db.UpdateSetCondition("name", "=", lockName, "and", "env", "=", manager.envName),

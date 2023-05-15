@@ -9,7 +9,7 @@
 
 ```
 import "github.com/smiecj/go_common/http"
-client := GetHTTPClient()
+client := http.DefaultHTTPClient()
 client.Do(Get(), Url("http://..."))
 ```
 
@@ -220,7 +220,7 @@ alerter.Alert(SetAlertTitleAndMsg(testAlertTitle, testAlertMsg))
 
 ```
 // 获取 Prometheus 监控，单例模式
-manager := GetPrometheusMonitorManager(
+manager := GetPrometheusMonitorManagerByConf(
 	PrometheusMonitorManagerConf{
 		Port: 开放端口,
 })
@@ -320,3 +320,4 @@ isUsed := net.CheckLocalPortIsUsed(22)
 
 ## db
 - mysql 数据操作，超过指定数据量自动分批（防止一次性删除/插入过多数据）
+- mysql 支持 group by 、 distinct

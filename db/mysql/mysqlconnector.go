@@ -26,6 +26,9 @@ const (
 
 	// 默认配置: 最大空闲连接数
 	defaultMaxIdleConn = 10
+
+	// 错误信息
+	insertUnknownObjectType = "unknown to insert object type"
 )
 
 var (
@@ -35,15 +38,15 @@ var (
 
 // mysql 连接配置
 type MySQLConnectOption struct {
-	Host        string `yaml:"host"`
-	Port        int    `yaml:"port"`
-	User        string `yaml:"user"`
-	Password    string `yaml:"password"`
-	Database    string `yaml:"database"`
-	IsSSL       bool   `yaml:"is_ssl"`
-	MaxLifeTime int    `yaml:"max_life_time"`
-	MaxIdleTime int    `yaml:"max_idle_time"`
-	MaxIdleConn int    `yaml:"max_idle_conn"`
+	Host        string `yaml:"host" json:"host"`
+	Port        int    `yaml:"port" json:"port"`
+	User        string `yaml:"user" json:"user"`
+	Password    string `yaml:"password" json:"password"`
+	Database    string `yaml:"database" json:"database"`
+	IsSSL       bool   `yaml:"is_ssl" json:"isSSL"`
+	MaxLifeTime int    `yaml:"max_life_time" json:"maxLifeTime"`
+	MaxIdleTime int    `yaml:"max_idle_time" json:"maxIdleTime"`
+	MaxIdleConn int    `yaml:"max_idle_conn" json:"maxIdleConn"`
 }
 
 // 对mysql 配置进行检查，不合理的配置配默认值
@@ -97,7 +100,7 @@ func (connector *mysqlConnector) Insert(funcArr ...RDBInsertConfigFunc) (ret Upd
 			insertKeyArr = keyArr
 		}
 		// 注意数组类型需要转换一下，传入的 interface{} 数组无法被 gorm 识别（即数组需要保持原有的type）
-		var toInsertArr interface{} = objectArr
+		var toInsertArr interface{}
 		objectArrType := action.GetObjectArrType()
 		if nil != objectArrType {
 			slice := reflect.MakeSlice(objectArrType, 0, 0)
@@ -105,6 +108,9 @@ func (connector *mysqlConnector) Insert(funcArr ...RDBInsertConfigFunc) (ret Upd
 				slice = reflect.Append(slice, reflect.ValueOf(currentObj))
 			}
 			toInsertArr = slice.Interface()
+		} else {
+			log.Error("[mysqlConnector.Insert] %s", insertUnknownObjectType)
+			return ret, errorcode.BuildErrorWithMsg(errorcode.DBExecFailed, insertUnknownObjectType)
 		}
 		// todo: insert 不能选定字段。可能要想其他办法进行插入
 		dbRet = connector.db.Table(action.GetSpaceName()).Select(insertKeyArr).Create(toInsertArr)
@@ -222,7 +228,7 @@ func (connector *mysqlConnector) Search(funcArr ...RDBSearchConfigFunc) (ret Sea
 		Select(keyArr).Where(condition.WhereArr.ToSQL()).Count(&count)
 
 	if nil != dbRet.Error {
-		log.Error("[mysqlConnector.Count] Count failed, table: %s, reason: %s", action.GetSpaceName(), dbRet.Error.Error())
+		log.Error("[mysqlConnector.Search] Count failed, table: %s, reason: %s", action.GetSpaceName(), dbRet.Error.Error())
 		return ret, dbRet.Error
 	} else {
 		ret.Total = int(count)

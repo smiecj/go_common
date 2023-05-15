@@ -108,7 +108,6 @@ func (client *zkClient) DeleteAll(funcArr ...confFunc) error {
 		}
 		currentChildArr = tempChildArr
 	}
-	log.Info("[test] all child: %v", allChildArr)
 	for index := len(allChildArr) - 1; index >= 0; index-- {
 		currentChild := allChildArr[index]
 		err := client.connection.Delete(currentChild, -1)

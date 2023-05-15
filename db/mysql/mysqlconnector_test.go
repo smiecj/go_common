@@ -7,6 +7,7 @@ import (
 
 	"github.com/smiecj/go_common/config"
 	. "github.com/smiecj/go_common/db"
+	"github.com/smiecj/go_common/util/file"
 	"github.com/stretchr/testify/require"
 )
 
@@ -27,7 +28,7 @@ var (
 
 	anotherSchoolStudentName = "xiaobai"
 
-	configPath = flag.String("config", "/tmp/conf.yaml", "config path")
+	configPath = flag.String("config", "conf_local.yaml", "config path")
 )
 
 // test mysql struct
@@ -77,7 +78,7 @@ func (slice *testStudentWithClassSlice) getFields() []string {
 
 // mysql db 连接器完整测试
 func TestMySQLConnector(t *testing.T) {
-	configManager, err := config.GetYamlConfigManager(*configPath)
+	configManager, err := config.GetYamlConfigManager(file.FindFilePath(*configPath))
 	require.Empty(t, err)
 	connector, err := GetMySQLConnector(configManager)
 	require.Empty(t, err)
@@ -133,6 +134,14 @@ func TestMySQLConnector(t *testing.T) {
 		SearchSetKeyArr(testStudentClassSlice.getFields()))
 	require.Empty(t, err)
 	require.LessOrEqual(t, 1, searchRet.Len)
+
+	// search with group by
+	// select class_id, count(*) from test_class left join test_student on ... group by test_class.id
+	searchRet, err = connector.Search(SearchSetSpace(dbTemp, tableStudent),
+		SearchSetObjectArrType(testStudentClassSlice),
+		SearchSetCondition(fmt.Sprintf("%s.%s", tableStudent, "name"), "=", testStudentSingle.Name),
+		SearchAddJoin(dbTemp, tableStudent, "class_id", tableClass, "id"),
+		SearchSetKeyArr(testStudentClassSlice.getFields()))
 
 	// distinct
 	searchRet, err = connector.Distinct(SearchSetSpace(dbTemp, tableStudent),

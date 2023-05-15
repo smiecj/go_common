@@ -7,7 +7,7 @@ import (
 )
 
 func TestMakeGetRequest(t *testing.T) {
-	client := GetHTTPClient()
+	client := DefaultHTTPClient()
 	rsp, err := client.Do(Get(), Url("https://prometheus.io/docs/introduction/overview/"))
 	if nil != err {
 		log.Error("[TestMakeGetRequest] request failed: %s", err.Error())
@@ -18,7 +18,7 @@ func TestMakeGetRequest(t *testing.T) {
 }
 
 /* func TestMakePostUrlEncodeRequest(t *testing.T) {
-	client := GetHTTPClient()
+	client := DefaultHTTPClient()
 	rsp, err := client.Do(PostWithUrlEncode(), Url("http://azkaban_address/userReq/doLogin"),
 		AddParam("loginEmail", "admin"), AddParam("password", "admin"))
 	if nil != err {

@@ -58,6 +58,7 @@ func buildRequest() *Request {
 	req.ctx, req.cancel = context.Background(), func() {}
 	req.header = make(map[string]string)
 	req.param = make(map[string]string)
+	req.method = string(methodGet)
 	return req
 }
 
@@ -186,7 +187,7 @@ type httpClient struct {
 }
 
 // 获取 http 客户端
-func GetHTTPClient() Client {
+func DefaultHTTPClient() Client {
 	// 单例模式
 	defaultClientOnce.Do(func() {
 		httpClient := new(httpClient)

@@ -71,11 +71,22 @@ func (arr whereArr) ToSQL() string {
 	for _, currentCond := range arr {
 		switch currentCond.Type {
 		case conditionTypeAssert:
+			// 特殊字符转义
+			// https://www.cnblogs.com/end/archive/2011/04/01/2002516.html
+			if strings.Contains(currentCond.Value, "\\") || strings.Contains(currentCond.Value, "/") {
+				currentCond.Value = strings.ReplaceAll(currentCond.Value, "\\", "\\\\")
+				currentCond.Value = strings.ReplaceAll(currentCond.Value, "/", "\\/")
+			}
 			// fix-对 value 关键字中有`` -- 作为字段标识, in, not in 这种条件，value 前后不需要加上引号
 			condFormatStr := "%s %s '%s'"
 			if currentCond.Method == conditionMethodIn || currentCond.Method == conditionMethodNotIn ||
-				strings.Contains(currentCond.Value, "`") {
+				strings.Contains(currentCond.Value, "`") || strings.Contains(currentCond.Value, "UNIX_TIMESTAMP") {
 				condFormatStr = "%s %s %s"
+			} else if strings.Contains(currentCond.Value, "'") {
+				condFormatStr = "%s %s \"%s\""
+			} else if strings.Contains(currentCond.Value, " ") {
+				currentCond.Value = strings.ReplaceAll(currentCond.Value, "\"", "\\\"")
+				condFormatStr = "%s %s \"%s\""
 			}
 			buffer.WriteString(fmt.Sprintf(condFormatStr,
 				currentCond.Key, methodToKeywordMap[string(currentCond.Method)], currentCond.Value))
