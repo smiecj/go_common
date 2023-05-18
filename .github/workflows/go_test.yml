@@ -38,7 +38,6 @@ jobs:
           sed -zri "s#apollo:\n  host: [A-Za-z0-9\.]+#apollo:\n  host: mock#g" conf_local.yaml
           sed -zri "s#mail:\n  host: [A-Za-z0-9\.]+#mail:\n  host: mock#g" conf_local.yaml
           go test -covermode=count -coverprofile=coverprofile.cov -run="^Test" -coverpkg=$(go list ./... | grep -v "/test" | tr '\n' ',') ./...
-    steps:
       - name: Collect Test Coverage File
         uses: actions/upload-artifact@v3
         with:
