@@ -37,3 +37,8 @@ apollo:
   cluster: dev
   Secret: xxx
   default_namespace: application
+mail:
+  host: smtp.xxx.com
+  sender: sender@xxx.com
+  token: smtp token
+  receiver: receiver@xxx.com
