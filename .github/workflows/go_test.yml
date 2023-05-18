@@ -1,0 +1,46 @@
+on:
+  [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:5.7
+        env:
+          MYSQL_ROOT_PASSWORD: root_password
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+          ref: master
+      - name: setup goalng
+        uses: actions/setup-go@v4
+        with:
+          go-version: '>=1.17.0'
+      - name: init mysql
+        run: |
+          mysql -h127.0.0.1 -P3306 -uroot -proot_password -e "create database d_meta"
+          mysql -h127.0.0.1 -P3306 -uroot -proot_password -e "create database temp"
+          mysql -h127.0.0.1 -P3306 -uroot -proot_password -Dd_meta < util/clusterlock/lock_init.sql
+          mysql -h127.0.0.1 -P3306 -uroot -proot_password -Dtemp < db/mysql/mysql_test.sql
+      - name: test
+        run: |
+          cp conf_example.yaml conf_local.yaml
+          sed -zri "s#mysql:\n  host: [A-Za-z0-9\.]+\n  port: [0-9]+\n  user: [A-Za-z]+\n  password: [A-Za-z0-9]+#mysql:\n  host: 127.0.0.1\n  port: 3306\n  user: root\n  password: root_password#g" conf_local.yaml
+          sed -zri "s#zk:\n  address: localhost:2181#zk:\n  address: mock#g" conf_local.yaml
+          sed -zri "s#impala:\n  host: [A-Za-z0-9\.]+#impala:\n  host: mock#g" conf_local.yaml
+          sed -zri "s#nacos:\n  host: [A-Za-z0-9\.]+#nacos:\n  host: mock#g" conf_local.yaml
+          sed -zri "s#apollo:\n  host: [A-Za-z0-9\.]+#apollo:\n  host: mock#g" conf_local.yaml
+          sed -zri "s#mail:\n  host: [A-Za-z0-9\.]+#mail:\n  host: mock#g" conf_local.yaml
+          go test -covermode=count -coverprofile=coverprofile.cov -run="^Test" -coverpkg=$(go list ./... | grep -v "/test" | tr '\n' ',') ./...
+    steps:
+      - name: Collect Test Coverage File
+        uses: actions/upload-artifact@v3
+        with:
+          name: go_common_coverage
+          path: coverprofile.cov

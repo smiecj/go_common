@@ -37,7 +37,7 @@ func TestLocalMemoryConnector(t *testing.T) {
 }
 
 func TestLocalFileConnector(t *testing.T) {
-	localConnector, err := GetLocalFileConnector("/tmp/golang")
+	localConnector, err := GetLocalFileConnector("/tmp")
 	require.Empty(t, err)
 
 	// input field
