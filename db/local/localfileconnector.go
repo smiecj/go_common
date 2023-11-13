@@ -203,6 +203,10 @@ func (connector *localFileConnector) Search(funcArr ...RDBSearchConfigFunc) (ret
 	}
 }
 
+func (connector *localFileConnector) ExecSearch(funcArr ...RDBSearchConfigFunc) (ret SearchRet, err error) {
+	return ret, errorcode.BuildErrorWithMsg(errorcode.NotImplement, "[localFileConnector.ExecSearch] not implement")
+}
+
 // 统计数据量
 func (connector *localFileConnector) Count(funcArr ...RDBSearchConfigFunc) (ret SearchRet, err error) {
 	// 注意: 文件统计 暂时不支持按指定条件过滤，直接统计所有行数

@@ -201,6 +201,7 @@ mail:
   sender: sender_email
   token: smtp_token
   receiver: receiver_email(split by comma)
+  ssl: whether use ssl
 ```
 
 send mail

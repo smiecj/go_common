@@ -18,6 +18,7 @@ type RDBConnector interface {
 	Delete(...RDBDeleteConfigFunc) (UpdateRet, error)
 	Backup(...RDBBackupConfigFunc) (UpdateRet, error)
 	Search(...RDBSearchConfigFunc) (SearchRet, error)
+	ExecSearch(...RDBSearchConfigFunc) (SearchRet, error)
 	Count(...RDBSearchConfigFunc) (SearchRet, error)
 	Distinct(...RDBSearchConfigFunc) (SearchRet, error)
 	Stat() (DBStat, error)
@@ -181,12 +182,17 @@ func (rdbField *rdbField) setObjectArrType(t reflect.Type) {
 // 插入配置
 type rdbInsertAction struct {
 	rdbField
+	batch int
 }
 
 // 创建一个插入设置
 func MakeRDBInsertAction() *rdbInsertAction {
 	action := new(rdbInsertAction)
 	return action
+}
+
+func (action *rdbInsertAction) Batch() int {
+	return action.batch
 }
 
 // 插入数据配置方法定义
@@ -248,6 +254,13 @@ func InsertAddObjectArr(objectArr interface{}) func(*rdbInsertAction) {
 func InsertAddKeyArr(keyArr []string) func(*rdbInsertAction) {
 	return func(action *rdbInsertAction) {
 		action.rdbField.addKeyArr(keyArr)
+	}
+}
+
+// 设置单批插入的数据大小，防止同一批数据量过大导致报 Error 1390 类似错误
+func InsertBatch(batch int) func(*rdbInsertAction) {
+	return func(action *rdbInsertAction) {
+		action.batch = batch
 	}
 }
 
@@ -356,6 +369,7 @@ type rdbSearchAction struct {
 	object        interface{}  // 用于 format 对象的类型
 	objectArrType reflect.Type // 用于生成最后的对象数组的类型
 	condition     SearchCondition
+	sql           string // 查询语句
 }
 
 // 获取需要查询的字段列表
@@ -376,6 +390,11 @@ func (action *rdbSearchAction) GetObject() interface{} {
 // 获取查询条件
 func (action *rdbSearchAction) GetObjectArrType() reflect.Type {
 	return action.objectArrType
+}
+
+// 获取查询SQL
+func (action *rdbSearchAction) GetSQL() string {
+	return action.sql
 }
 
 // 创建一个查询配置
@@ -478,6 +497,13 @@ func SearchAddJoin(fieldArr ...string) RDBSearchConfigFunc {
 		}
 
 		rsa.condition.Join = append(rsa.condition.Join, toAppendJoinCondition)
+	}
+}
+
+// 设置查询语句
+func SearchSetSQL(sql string) func(*rdbSearchAction) {
+	return func(action *rdbSearchAction) {
+		action.sql = sql
 	}
 }
 

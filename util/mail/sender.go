@@ -2,7 +2,9 @@
 package mail
 
 import (
+	"crypto/tls"
 	"fmt"
+	"io"
 	"net/smtp"
 	"strings"
 	"sync"
@@ -34,6 +36,7 @@ type mailSenderInitConf struct {
 	Token         string `yaml:"token"`
 	Sender        string `yaml:"sender"`
 	Receiver      string `yaml:"receiver"`
+	SSL           bool   `yaml:"ssl"`
 	SendSeparatly bool   `yaml:"send_separatly"`
 }
 
@@ -139,6 +142,9 @@ func (impl *mailSenderSMTPImpl) Send(setterArr ...mailSendConfSetter) error {
 
 // 发送邮件，调用 smtp 接口逻辑
 func (impl *mailSenderSMTPImpl) send(conf *mailSendConf, receiverArr []string) error {
+	if impl.conf.SSL {
+		return impl.sendBySSL(conf, conf.receiverArr)
+	}
 	auth := smtp.PlainAuth("", impl.conf.Sender, impl.conf.Token, impl.conf.Host)
 	contentType := "Content-Type: text/plain; charset=UTF-8"
 	msg := []byte("To: " + strings.Join(receiverArr, ",") + "\r\nFrom: " + conf.nickName +
@@ -150,6 +156,79 @@ func (impl *mailSenderSMTPImpl) send(conf *mailSendConf, receiverArr []string) e
 	}
 	log.Info("[mailSenderSMTPImpl.SendMail] send mail success, sender: %s, receiver: %v", impl.conf.Sender, receiverArr)
 	return nil
+}
+
+// 参考: https://gist.github.com/chrisgillis/10888032
+// https://medium.com/@back_to_basics/golang-sendmail-sending-mail-through-net-smtp-package-5cadbe2670e0
+func (impl *mailSenderSMTPImpl) sendBySSL(conf *mailSendConf, receiverArr []string) (err error) {
+	tlsconfig := &tls.Config{
+		InsecureSkipVerify: true,
+		ServerName:         impl.conf.Host,
+	}
+
+	var (
+		conn   *tls.Conn
+		client *smtp.Client
+		auth   smtp.Auth
+		writer io.WriteCloser
+	)
+
+	createConn := func() {
+		conn, err = tls.Dial("tcp", fmt.Sprintf("%s:%d", impl.conf.Host, impl.conf.Port), tlsconfig)
+	}
+	createClient := func() {
+		client, err = smtp.NewClient(conn, impl.conf.Host)
+	}
+	createAuth := func() {
+		auth = smtp.PlainAuth("", impl.conf.Sender, impl.conf.Token, impl.conf.Host)
+		err = client.Auth(auth)
+	}
+	createMail := func() {
+		err = client.Mail(impl.conf.Sender)
+	}
+	// https://www.ibm.com/docs/zh/db2/10.5?topic=module-rcpt-procedure-provide-e-mail-address-recipient
+	rcptCmd := func() {
+		for _, k := range receiverArr {
+			if err = client.Rcpt(k); err != nil {
+				break
+			}
+		}
+	}
+	getWriter := func() {
+		writer, err = client.Data()
+	}
+	write := func() {
+		// Setup headers
+		tempHeader := make(map[string]string)
+		tempHeader["From"] = impl.conf.Sender
+		tempHeader["To"] = strings.Join(receiverArr, ";")
+		tempHeader["Subject"] = conf.title
+
+		// Setup message
+		message := ""
+		for k, v := range tempHeader {
+			message += fmt.Sprintf("%s: %s\r\n", k, v)
+		}
+		message += "\r\n" + conf.content
+
+		_, err = writer.Write([]byte(message))
+	}
+	writerClose := func() {
+		err = writer.Close()
+	}
+	clientQuit := func() {
+		err = client.Quit()
+	}
+
+	funcArr := []func(){createConn, createClient, createAuth, createMail, rcptCmd, getWriter, write, writerClose, clientQuit}
+	for _, f := range funcArr {
+		f()
+		if nil != err {
+			break
+		}
+	}
+
+	return
 }
 
 // 构建一个 SMTP 邮件发送器

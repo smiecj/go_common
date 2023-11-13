@@ -10,6 +10,9 @@ test_db_file:
 test_db_mysql:
 	go test -count=1 -v github.com/smiecj/go_common/db/mysql -run="TestMySQLConnector"
 
+test_db_batch:
+	go test -count=1 -v github.com/smiecj/go_common/db/mysql -run="TestMySQLBatchInsert"
+
 test_db_impala:
 	go test -count=1 -v github.com/smiecj/go_common/db/impala -run="TestImpalaConnector"
 
@@ -26,4 +29,4 @@ test_apollo_config:
 	go test -count=1 -timeout=100s -v github.com/smiecj/go_common/config/apollo -run="TestApolloConfig"
 
 test_smtp:
-	go test -count=1 -v github.com/smiecj/go_common/util/mail -run="TestSendMail"
+	go test -timeout=10s -count=1 -v github.com/smiecj/go_common/util/mail -run="TestSendMail"

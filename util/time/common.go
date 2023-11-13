@@ -146,6 +146,11 @@ func WeekDayStringByDate(date string) (string, error) {
 	return weekDayToChineseMap[t.Weekday()], nil
 }
 
+// 昨天的日期
+func YesterDate() string {
+	return DateBeforeDay(1)
+}
+
 // 获取当前日期指定天数之前的日期
 func DateBeforeDay(day int) string {
 	targetTime := time.Now().Add(-time.Duration(day*24) * time.Hour)

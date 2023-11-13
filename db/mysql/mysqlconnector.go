@@ -97,7 +97,7 @@ func (connector *mysqlConnector) Insert(funcArr ...RDBInsertConfigFunc) (ret Upd
 			}
 			keyValueMapArr = append(keyValueMapArr, currentKeyValueMap)
 		}
-		dbRet = connector.db.Table(action.GetSpaceName()).Create(keyValueMapArr)
+		dbRet = connector.db.Table(action.GetSpaceName()).Session(&gorm.Session{CreateBatchSize: action.Batch()}).Create(keyValueMapArr)
 	} else if len(objectArr) != 0 {
 		insertKeyArr := []string{}
 		keyArr := action.GetKeyArr()
@@ -118,7 +118,7 @@ func (connector *mysqlConnector) Insert(funcArr ...RDBInsertConfigFunc) (ret Upd
 			return ret, errorcode.BuildErrorWithMsg(errorcode.DBExecFailed, insertUnknownObjectType)
 		}
 		// todo: insert 不能选定字段。可能要想其他办法进行插入
-		dbRet = connector.db.Table(action.GetSpaceName()).Select(insertKeyArr).Create(toInsertArr)
+		dbRet = connector.db.Table(action.GetSpaceName()).Select(insertKeyArr).Session(&gorm.Session{CreateBatchSize: action.Batch()}).Create(toInsertArr)
 	} else {
 		connector.log.Warn("[Insert] To insert data is empty")
 		return ret, nil
@@ -260,14 +260,7 @@ func (connector *mysqlConnector) Search(funcArr ...RDBSearchConfigFunc) (ret Sea
 			Select(keyArr).Where(condition.WhereArr.ToSQL()).Order(orderStr).Joins(condition.Join.ToSQL()).
 			Offset(condition.Page.No * condition.Page.Limit).Limit(condition.Page.Limit).
 			Find(&keyValueMapArr)
-		for _, currentKeyValueMap := range keyValueMapArr {
-			currentField := BuildNewField()
-			for key, value := range currentKeyValueMap {
-				valuestr := fmt.Sprintf("%v", value)
-				currentField.AddKeyValue(key, valuestr)
-			}
-			ret.AddField(currentField)
-		}
+		connector.addFielBySearchRet(keyValueMapArr, &ret)
 	}
 
 	ret.Len, err = int(dbRet.RowsAffected), dbRet.Error
@@ -276,6 +269,41 @@ func (connector *mysqlConnector) Search(funcArr ...RDBSearchConfigFunc) (ret Sea
 		connector.log.Error("[Select] Select failed, table: %s, reason: %s", action.GetSpaceName(), err.Error())
 	} else {
 		connector.log.Info("[Select] Select success: %s, search rows: %d", action.GetSpaceName(), ret.Len)
+	}
+	return
+}
+
+// mysql: 执行查询语句
+func (connector *mysqlConnector) ExecSearch(funcArr ...RDBSearchConfigFunc) (ret SearchRet, err error) {
+	action := MakeRDBSearchAction()
+	for _, currentFunc := range funcArr {
+		currentFunc(action)
+	}
+
+	if action.GetSQL() == "" {
+		err = errorcode.BuildErrorWithMsg(errorcode.DBExecFailed, "exec sql empty")
+		return
+	}
+
+	var dbRet *gorm.DB
+	objectArrType := action.GetObjectArrType()
+	if nil != objectArrType {
+		objectReflectArr := reflect.MakeSlice(objectArrType, 0, 0).Interface()
+		dbRet = connector.db.Raw(action.GetSQL()).Find(&objectReflectArr)
+		ret.ObjectArr = objectReflectArr
+	} else {
+		keyValueMapArr := make([]map[string]interface{}, 0)
+		dbRet = connector.db.Raw(action.GetSQL()).Find(&keyValueMapArr)
+		connector.addFielBySearchRet(keyValueMapArr, &ret)
+	}
+
+	ret.Len, err = int(dbRet.RowsAffected), dbRet.Error
+	ret.Total = ret.Len
+
+	if nil != err {
+		connector.log.Error("[ExecSearch] Exec Select failed, sql: %s, reason: %s", action.GetSQL(), err.Error())
+	} else {
+		connector.log.Info("[ExecSearch] Exec Select success, search rows: %d", ret.Len)
 	}
 	return
 }
@@ -382,6 +410,18 @@ func (connector *mysqlConnector) Close() error {
 	}
 	connector.log.Info("[Close] close success")
 	return nil
+}
+
+// mysql: 转换 key-value field
+func (connector *mysqlConnector) addFielBySearchRet(keyValueMapArr []map[string]interface{}, ret *SearchRet) {
+	for _, currentKeyValueMap := range keyValueMapArr {
+		currentField := BuildNewField()
+		for key, value := range currentKeyValueMap {
+			valuestr := fmt.Sprintf("%v", value)
+			currentField.AddKeyValue(key, valuestr)
+		}
+		ret.AddField(currentField)
+	}
 }
 
 // 通过配置中心，获取 mysql 连接器

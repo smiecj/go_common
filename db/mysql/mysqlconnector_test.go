@@ -3,9 +3,11 @@ package mysql
 import (
 	"flag"
 	"fmt"
+	"strconv"
 	"testing"
 
 	yamlconfig "github.com/smiecj/go_common/config/yaml"
+	"github.com/smiecj/go_common/db"
 	. "github.com/smiecj/go_common/db"
 	"github.com/smiecj/go_common/util/file"
 	"github.com/stretchr/testify/require"
@@ -55,12 +57,24 @@ func (slice *testStudentWithClassSlice) getFields() []string {
 	return []string{"test_student.name", "test_student.class_id", "test_class.name AS class_name"}
 }
 
-// mysql db 连接器完整测试
-func TestMySQLConnector(t *testing.T) {
+// show database result
+type testDatabase struct {
+	Name string `gorm:"column:Database"`
+}
+
+type testDatabaseSlice []testDatabase
+
+func initConnection(t *testing.T) db.RDBConnector {
 	configManager, err := yamlconfig.GetYamlConfigManager(file.FindFilePath(*configPath))
 	require.Empty(t, err)
 	connector, err := GetMySQLConnector(configManager)
 	require.Empty(t, err)
+	return connector
+}
+
+// mysql db 连接器完整测试
+func TestMySQLConnector(t *testing.T) {
+	connector := initConnection(t)
 
 	// insert
 	var testStudentSlice studentSlice
@@ -68,19 +82,19 @@ func TestMySQLConnector(t *testing.T) {
 	insertRet, err := connector.Insert(InsertSetSpace(dbTemp, tableStudent),
 		InsertAddObjectArr(testStudentArr),
 		InsertAddKeyArr(testStudentSlice.getFields()))
-	require.Equal(t, nil, err)
+	require.Nil(t, err)
 	require.Equal(t, len(testStudentArr), insertRet.AffectedRows)
 	// insert single
 	insertRet, err = connector.Insert(InsertSetSpace(dbTemp, tableStudent),
 		InsertSetObject(testStudentSingle), InsertAddKeyArr(testStudentSlice.getFields()))
-	require.Equal(t, nil, err)
+	require.Nil(t, err)
 	require.Equal(t, 1, insertRet.AffectedRows)
 
 	// search
 	searchRet, err := connector.Search(SearchSetSpace(dbTemp, tableStudent),
 		SearchSetObjectArrType(testStudentSlice), SearchSetPageCondition(0, 10),
 		SearchSetKeyArr(testStudentSlice.getFields()))
-	require.Equal(t, nil, err)
+	require.Nil(t, err)
 	require.LessOrEqual(t, 1, searchRet.Len)
 	searchStudentArrRet := searchRet.ObjectArr.(studentSlice)
 	require.GreaterOrEqual(t, len(searchStudentArrRet), 3)
@@ -92,7 +106,7 @@ func TestMySQLConnector(t *testing.T) {
 		SearchSetObjectArrType(testStudentSlice), SearchSetPageCondition(0, 10),
 		SearchSetCondition("name", "=", anotherSchoolStudentName),
 		SearchSetKeyArr(testStudentSlice.getFields()))
-	require.Equal(t, nil, err)
+	require.Nil(t, err)
 	require.LessOrEqual(t, 0, searchRet.Len)
 	_, isConvertSuccess := searchRet.ObjectArr.(studentSlice)
 	require.True(t, isConvertSuccess)
@@ -111,7 +125,7 @@ func TestMySQLConnector(t *testing.T) {
 		SearchSetCondition(fmt.Sprintf("%s.%s", tableStudent, "name"), "=", testStudentSingle.Name),
 		SearchAddJoin(dbTemp, tableStudent, "class_id", tableClass, "id"),
 		SearchSetKeyArr(testStudentClassSlice.getFields()))
-	require.Empty(t, err)
+	require.Nil(t, err)
 	require.LessOrEqual(t, 1, searchRet.Len)
 
 	// search with group by
@@ -121,38 +135,78 @@ func TestMySQLConnector(t *testing.T) {
 		SearchSetCondition(fmt.Sprintf("%s.%s", tableStudent, "name"), "=", testStudentSingle.Name),
 		SearchAddJoin(dbTemp, tableStudent, "class_id", tableClass, "id"),
 		SearchSetKeyArr(testStudentClassSlice.getFields()))
+	require.Empty(t, err)
+	require.LessOrEqual(t, 1, searchRet.Len)
 
 	// distinct
 	searchRet, err = connector.Distinct(SearchSetSpace(dbTemp, tableStudent),
 		SearchSetKeyArr([]string{"name", "class_id"}))
-	require.Equal(t, nil, err)
+	require.Nil(t, err)
 	require.GreaterOrEqual(t, searchRet.Len, 3)
 
 	// update
 	UpdateRet, err := connector.Update(UpdateSetSpace(dbTemp, tableStudent),
 		UpdateSetCondition("name", "=", "xiaoming"),
 		UpdateAddObject(testStudent{ClassId: 2}), UpdateAddKeyArr([]string{"class_id"}))
-	require.Equal(t, nil, err)
+	require.Nil(t, err)
 	require.LessOrEqual(t, 1, UpdateRet.AffectedRows)
 
 	// backup
 	backupRet, err := connector.Backup(BackupSetSourceSpace(dbTemp, tableStudent),
 		BackupSetTargetSpace(dbTemp, tableStudentBak),
 		BackupSetCondition("name", "in", "('xiaoming', 'xiaohong', 'xiaolin', 'xiaozhang')"))
-	require.Equal(t, nil, err)
+	require.Nil(t, err)
 	require.LessOrEqual(t, 1, backupRet.AffectedRows)
 
 	// delete all
 	deleteRet, err := connector.Delete(DeleteSetSpace(dbTemp, tableStudent),
 		DeleteSetCondition("name", "in", "('xiaoming', 'xiaohong', 'xiaolin', 'xiaozhang')"))
-	require.Equal(t, nil, err)
+	require.Nil(t, err)
 	require.LessOrEqual(t, 1, deleteRet.AffectedRows)
 	deleteRet, err = connector.Delete(DeleteSetSpace(dbTemp, tableStudentBak),
 		DeleteSetLimit(backupRet.AffectedRows))
-	require.Equal(t, nil, err)
+	require.Nil(t, err)
 	require.Equal(t, backupRet.AffectedRows, deleteRet.AffectedRows)
+
+	// exec query
+	execSearchRet, err := connector.ExecSearch(db.SearchSetSQL("show databases"), db.SearchSetObjectArrType(testDatabaseSlice{}))
+	// execSearchRet, err := connector.ExecSearch(db.SearchSetSQL("show databases"))
+	// execSearchRet, err := connector.ExecSearch(db.SearchSetSQL("show databases in `mysql`"), db.SearchSetObjectArrType(testDatabaseSlice{}))
+	require.Nil(t, err)
+	require.LessOrEqual(t, 1, execSearchRet.Len)
 
 	// close
 	err = connector.Close()
 	require.Nil(t, err)
+}
+func TestMySQLBatchInsert(t *testing.T) {
+	const (
+		arrSize        = 1000
+		batchSize      = 100
+		specialClassId = 2333
+	)
+
+	connector := initConnection(t)
+
+	studentArr := make(studentSlice, 0, arrSize)
+
+	for index := 0; index < arrSize; index++ {
+		studentArr = append(studentArr, testStudent{
+			Name:    fmt.Sprintf("stu-%d", index),
+			ClassId: specialClassId,
+		})
+	}
+
+	// batch insert
+	insertRet, err := connector.Insert(InsertSetSpace(dbTemp, tableStudent),
+		InsertAddObjectArr(studentArr),
+		InsertBatch(batchSize),
+		InsertAddKeyArr(studentArr.getFields()))
+	require.Nil(t, err)
+	require.Equal(t, arrSize, insertRet.AffectedRows)
+
+	deleteRet, err := connector.Delete(DeleteSetSpace(dbTemp, tableStudent),
+		DeleteSetCondition("class_id", "=", strconv.Itoa(specialClassId)))
+	require.Nil(t, err)
+	require.Equal(t, arrSize, deleteRet.AffectedRows)
 }

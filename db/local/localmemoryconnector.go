@@ -150,4 +150,8 @@ func GetLocalMemoryConnector() (RDBConnector, error) {
 	return localMemoryConnectorSingleton, nil
 }
 
+func (connector *localMemoryConnector) ExecSearch(funcArr ...RDBSearchConfigFunc) (ret SearchRet, err error) {
+	return ret, errorcode.BuildErrorWithMsg(errorcode.NotImplement, "[localMemoryConnector.ExecSearch] not implement")
+}
+
 // 后续: 初始化 连接器配置中，增加 id generator 配置

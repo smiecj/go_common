@@ -198,6 +198,7 @@ mail:
   sender: 发送人邮箱
   token: smtp token
   receiver: 收件人列表(逗号分隔)
+  ssl: 是否使用 ssl
 ```
 
 发送逻辑:
