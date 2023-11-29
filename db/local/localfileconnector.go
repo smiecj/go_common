@@ -203,6 +203,10 @@ func (connector *localFileConnector) Search(funcArr ...RDBSearchConfigFunc) (ret
 	}
 }
 
+func (connector *localFileConnector) Exec(funcArr ...RDBUpdateConfigFunc) (ret UpdateRet, err error) {
+	return ret, errorcode.BuildErrorWithMsg(errorcode.NotImplement, "[localFileConnector.Exec] not implement")
+}
+
 func (connector *localFileConnector) ExecSearch(funcArr ...RDBSearchConfigFunc) (ret SearchRet, err error) {
 	return ret, errorcode.BuildErrorWithMsg(errorcode.NotImplement, "[localFileConnector.ExecSearch] not implement")
 }

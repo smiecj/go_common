@@ -18,6 +18,7 @@ type RDBConnector interface {
 	Delete(...RDBDeleteConfigFunc) (UpdateRet, error)
 	Backup(...RDBBackupConfigFunc) (UpdateRet, error)
 	Search(...RDBSearchConfigFunc) (SearchRet, error)
+	Exec(...RDBUpdateConfigFunc) (UpdateRet, error)
 	ExecSearch(...RDBSearchConfigFunc) (SearchRet, error)
 	Count(...RDBSearchConfigFunc) (SearchRet, error)
 	Distinct(...RDBSearchConfigFunc) (SearchRet, error)
@@ -268,6 +269,7 @@ func InsertBatch(batch int) func(*rdbInsertAction) {
 type rdbUpdateAction struct {
 	rdbField
 	condition updateCondition
+	sql       string
 }
 
 // 创建一个更新设置
@@ -281,7 +283,12 @@ func (action *rdbUpdateAction) GetCondition() updateCondition {
 	return action.condition
 }
 
-// 插入数据配置方法定义
+// 获取查询SQL
+func (action *rdbUpdateAction) GetSQL() string {
+	return action.sql
+}
+
+// 更新数据配置方法定义
 type RDBUpdateConfigFunc func(*rdbUpdateAction)
 
 // 设置表空间
@@ -316,6 +323,13 @@ func UpdateSetCondition(args ...string) func(*rdbUpdateAction) {
 func UpdateAddKeyArr(keyArr []string) func(*rdbUpdateAction) {
 	return func(action *rdbUpdateAction) {
 		action.rdbField.addKeyArr(keyArr)
+	}
+}
+
+// 设置变更语句
+func UpdateSetSQL(sql string) func(*rdbUpdateAction) {
+	return func(action *rdbUpdateAction) {
+		action.sql = sql
 	}
 }
 

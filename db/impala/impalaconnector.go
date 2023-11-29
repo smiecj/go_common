@@ -64,6 +64,10 @@ func (connector *impalaConnector) Search(funcArr ...RDBSearchConfigFunc) (ret Se
 	return ret, errorcode.BuildErrorWithMsg(errorcode.NotImplement, "[impalaConnector.Search] not implement")
 }
 
+func (connector *impalaConnector) Exec(funcArr ...RDBUpdateConfigFunc) (ret UpdateRet, err error) {
+	return ret, errorcode.BuildErrorWithMsg(errorcode.NotImplement, "[impalaConnector.Exec] not implement")
+}
+
 func (connector *impalaConnector) ExecSearch(funcArr ...RDBSearchConfigFunc) (ret SearchRet, err error) {
 	return ret, errorcode.BuildErrorWithMsg(errorcode.NotImplement, "[impalaConnector.ExecSearch] not implement")
 }

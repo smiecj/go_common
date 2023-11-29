@@ -10,6 +10,7 @@ import (
 	"github.com/smiecj/go_common/db"
 	. "github.com/smiecj/go_common/db"
 	"github.com/smiecj/go_common/util/file"
+	"github.com/smiecj/go_common/util/log"
 	"github.com/stretchr/testify/require"
 )
 
@@ -145,11 +146,11 @@ func TestMySQLConnector(t *testing.T) {
 	require.GreaterOrEqual(t, searchRet.Len, 3)
 
 	// update
-	UpdateRet, err := connector.Update(UpdateSetSpace(dbTemp, tableStudent),
+	updateRet, err := connector.Update(UpdateSetSpace(dbTemp, tableStudent),
 		UpdateSetCondition("name", "=", "xiaoming"),
 		UpdateAddObject(testStudent{ClassId: 2}), UpdateAddKeyArr([]string{"class_id"}))
 	require.Nil(t, err)
-	require.LessOrEqual(t, 1, UpdateRet.AffectedRows)
+	require.LessOrEqual(t, 1, updateRet.AffectedRows)
 
 	// backup
 	backupRet, err := connector.Backup(BackupSetSourceSpace(dbTemp, tableStudent),
@@ -174,6 +175,16 @@ func TestMySQLConnector(t *testing.T) {
 	// execSearchRet, err := connector.ExecSearch(db.SearchSetSQL("show databases in `mysql`"), db.SearchSetObjectArrType(testDatabaseSlice{}))
 	require.Nil(t, err)
 	require.LessOrEqual(t, 1, execSearchRet.Len)
+
+	execSearchRet, err = connector.ExecSearch(db.SearchSetSQL("show create table temp.test_class"))
+	require.Nil(t, err)
+	log.Info("[test] show create table ret: " + execSearchRet.FieldArr[0].GetMap()["Create Table"])
+
+	// exec update / ddl
+	_, err = connector.Exec(db.UpdateSetSQL("alter table temp.test_class ADD COLUMN test_field VARCHAR(16) DEFAULT '' COMMENT 'test add column'"))
+	require.Nil(t, err)
+	_, err = connector.Exec(db.UpdateSetSQL("alter table temp.test_class DROP COLUMN test_field"))
+	require.Nil(t, err)
 
 	// close
 	err = connector.Close()

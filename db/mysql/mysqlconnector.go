@@ -47,6 +47,7 @@ type MySQLConnectOption struct {
 	MaxLifeTime int    `yaml:"max_life_time" json:"maxLifeTime"`
 	MaxIdleTime int    `yaml:"max_idle_time" json:"maxIdleTime"`
 	MaxIdleConn int    `yaml:"max_idle_conn" json:"maxIdleConn"`
+	LogPrefix   string `yaml:"log_prefix" json:"log_prefix"`
 	// 特殊情况: 同一个数据库地址 也需要生成多个连接池，此时可通过随机数生成 id
 	Id string
 }
@@ -308,6 +309,30 @@ func (connector *mysqlConnector) ExecSearch(funcArr ...RDBSearchConfigFunc) (ret
 	return
 }
 
+// Exec: 直接执行语句
+func (connector *mysqlConnector) Exec(funcArr ...RDBUpdateConfigFunc) (ret UpdateRet, err error) {
+	action := MakeRDBUpdateAction()
+	for _, currentFunc := range funcArr {
+		currentFunc(action)
+	}
+
+	if action.GetSQL() == "" {
+		err = errorcode.BuildErrorWithMsg(errorcode.DBExecFailed, "exec sql empty")
+		return
+	}
+
+	dbRet := connector.db.Exec(action.GetSQL())
+
+	ret.AffectedRows, err = int(dbRet.RowsAffected), dbRet.Error
+
+	if nil != err {
+		connector.log.Error("[Exec] Exec failed, sql: %s, reason: %s", action.GetSQL(), err.Error())
+	} else {
+		connector.log.Info("[Exec] Exec success, affected rows: %d", ret.AffectedRows)
+	}
+	return
+}
+
 // mysql: 统计数据量
 func (connector *mysqlConnector) Count(funcArr ...RDBSearchConfigFunc) (ret SearchRet, err error) {
 	action := MakeRDBSearchAction()
@@ -481,7 +506,13 @@ func getMySQLConnector(option MySQLConnectOption) (RDBConnector, error) {
 	mysqlConnector := new(mysqlConnector)
 	mysqlConnector.db = db
 	mysqlConnector.option = option
-	mysqlConnector.log = log.PrefixLogger("mysqlConnector")
+
+	if option.LogPrefix == "" {
+		mysqlConnector.log = log.PrefixLogger("mysqlConnector")
+	} else {
+		mysqlConnector.log = log.PrefixLogger(option.LogPrefix)
+	}
+
 	mysqlConnectorMap[option] = mysqlConnector
 	return mysqlConnector, nil
 }

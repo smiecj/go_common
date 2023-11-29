@@ -27,6 +27,10 @@ func (connector *mockImpalaConnector) Search(funcArr ...RDBSearchConfigFunc) (re
 	return SearchRet{}, nil
 }
 
+func (connector *mockImpalaConnector) Exec(funcArr ...RDBUpdateConfigFunc) (ret UpdateRet, err error) {
+	return UpdateRet{}, nil
+}
+
 func (connector *mockImpalaConnector) ExecSearch(funcArr ...RDBSearchConfigFunc) (ret SearchRet, err error) {
 	return SearchRet{}, nil
 }

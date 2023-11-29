@@ -150,6 +150,10 @@ func GetLocalMemoryConnector() (RDBConnector, error) {
 	return localMemoryConnectorSingleton, nil
 }
 
+func (connector *localMemoryConnector) Exec(funcArr ...RDBUpdateConfigFunc) (ret UpdateRet, err error) {
+	return ret, errorcode.BuildErrorWithMsg(errorcode.NotImplement, "[localMemoryConnector.Exec] not implement")
+}
+
 func (connector *localMemoryConnector) ExecSearch(funcArr ...RDBSearchConfigFunc) (ret SearchRet, err error) {
 	return ret, errorcode.BuildErrorWithMsg(errorcode.NotImplement, "[localMemoryConnector.ExecSearch] not implement")
 }
